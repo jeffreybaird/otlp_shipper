@@ -1,4 +1,4 @@
-defmodule OtlpShipper.LogHandler.Pool do
+defmodule OtlpShipper.Pool do
   @moduledoc false
 
   # A brutally killed Finch supervisor may leave its named descendants shutting

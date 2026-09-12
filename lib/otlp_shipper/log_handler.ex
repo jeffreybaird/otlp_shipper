@@ -101,7 +101,7 @@ defmodule OtlpShipper.LogHandler do
     children = [
       %{
         id: finch,
-        start: {__MODULE__.Pool, :start_link, [finch, :atomics.new(1, [])]},
+        start: {OtlpShipper.Pool, :start_link, [finch, :atomics.new(1, [])]},
         type: :supervisor
       },
       {Buffer, name: buffer, config: config, export: export},
