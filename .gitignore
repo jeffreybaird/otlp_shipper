@@ -8,3 +8,5 @@ erl_crash.dump
 *.beam
 /.elixir_ls/
 .env
+/priv/plts/
+/*.tar
