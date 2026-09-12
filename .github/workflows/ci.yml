@@ -60,3 +60,21 @@ jobs:
 
       - name: Verify package in a clean production consumer
         run: scripts/package_smoke.sh
+
+  minimum:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.19.0-otp-28'
+          otp-version: '28.0'
+          version-type: strict
+      - name: Fetch dependencies
+        run: mix deps.get
+      - name: Verify oldest supported toolchain
+        run: mix compile --warnings-as-errors && mix test
+      - name: Verify minimum runtime dependencies without tracing
+        run: OTLP_SMOKE_DEPENDENCY_SET=minimum scripts/package_smoke.sh
+      - name: Verify minimum optional tracing API
+        run: OTLP_SMOKE_DEPENDENCY_SET=minimum_with_tracing scripts/package_smoke.sh
