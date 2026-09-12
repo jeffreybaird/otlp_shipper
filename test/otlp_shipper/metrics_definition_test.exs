@@ -127,4 +127,26 @@ defmodule OtlpShipper.Metrics.DefinitionTest do
     {:ok, [defn]} = Definition.new([sum("web.value", tags: [:missing])])
     assert {:ok, [], 1} = Definition.sample(defn, %{value: 1}, %{})
   end
+
+  test "histogram bounds must remain distinct after protobuf double conversion" do
+    assert {:error, :invalid_histogram_buckets} =
+             Definition.new([
+               distribution("test.precision",
+                 reporter_options: [buckets: [9_007_199_254_740_992, 9_007_199_254_740_993]]
+               )
+             ])
+  end
+
+  test "small tag slices do not retain huge source binaries" do
+    source = :binary.copy("x", 100_000)
+    slice = binary_part(source, 10, 100)
+    assert :binary.referenced_byte_size(slice) > byte_size(slice)
+    {:ok, [definition]} = Definition.new([sum("test.value", tags: fn _ -> %{slice => slice} end)])
+
+    assert {:ok, [%{key: key, value: %{value: {:string_value, value}}}], 1} =
+             Definition.sample(definition, %{value: 1}, %{})
+
+    assert :binary.referenced_byte_size(key) == byte_size(key)
+    assert :binary.referenced_byte_size(value) == byte_size(value)
+  end
 end

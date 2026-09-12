@@ -89,7 +89,7 @@ defmodule OtlpShipper.Metrics.Definition do
          {:ok, value} <- validate_measurement(definition.kind, value),
          tags = extract_tags(metric, metadata),
          :ok <- validate_tags(tags, max_tag_bytes) do
-      {:ok, Value.attributes(tags), value}
+      {:ok, tags |> copy_tags() |> Value.attributes(), value}
     else
       false -> :skip
       nil -> :skip
@@ -158,7 +158,7 @@ defmodule OtlpShipper.Metrics.Definition do
     bounds = Keyword.get(options, :buckets)
 
     if Keyword.keys(options) == [:buckets] and is_list(bounds) and length(bounds) <= 256 and
-         Enum.all?(bounds, &numeric?/1) and increasing?(bounds),
+         Enum.all?(bounds, &numeric?/1) and increasing?(Enum.map(bounds, &(&1 / 1))),
        do: {:ok, Enum.map(bounds, &(&1 / 1))},
        else: {:error, :invalid_histogram_buckets}
   end
@@ -190,6 +190,12 @@ defmodule OtlpShipper.Metrics.Definition do
     do: value == value and abs(value) <= 1.7976931348623157e308
 
   defp numeric?(_), do: false
+
+  defp copy_tags(tags),
+    do: Map.new(tags, fn {key, value} -> {copy_binary(key), copy_binary(value)} end)
+
+  defp copy_binary(value) when is_binary(value), do: :binary.copy(value)
+  defp copy_binary(value), do: value
 
   defp validate_tags(tags, max_bytes) when is_map(tags) and not is_struct(tags) do
     if map_size(tags) <= 32 and :erlang.external_size(tags) <= max_bytes and
