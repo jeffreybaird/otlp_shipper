@@ -156,7 +156,12 @@ defmodule OtlpShipper.Transport do
     case module.decode_msg(body, type) do
       %{partial_success: partial} ->
         rejected = Map.get(partial, rejected_key, 0)
-        if rejected >= 0, do: {:ok, :partial, rejected}, else: {:error, :invalid_response}
+
+        cond do
+          rejected < 0 -> {:error, :invalid_response}
+          rejected == 0 and Map.get(partial, :error_message, "") == "" -> :ok
+          true -> {:ok, :partial, rejected}
+        end
 
       _ ->
         :ok
