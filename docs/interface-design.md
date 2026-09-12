@@ -22,7 +22,8 @@ specifications, and documented events as compatibility surfaces. Review their
 changes explicitly. Deprecate with migration guidance when practical; record
 intentional breaking changes in release notes.
 
-The current `formats/0` and `greet/1,2` are scaffold examples. Resolve PLAN.md's remaining API/naming decisions before replacing them; do not advertise them as OTLP support.
+The bootstrap greeting functions were replaced during Phase 0. The real package
+root is `OtlpShipper`; core APIs are pre-release.
 
 Use semantic versions: breaking changes in the initial `0.x` series increment the
 minor version; document the migration even before `1.0`. See the official

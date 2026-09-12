@@ -66,3 +66,25 @@ The plan references a handler recipe and binary fixture in `elixir_as_inf`; neit
 was inspected or copied by this task. Verify access and provenance before reuse.
 The plan reports the hub's metrics endpoint is not ready. Use the fake collector and
 real OTel Collector for conformance instead of making the hub a development dependency.
+
+## Phase 0 implementation record
+
+Shared configuration/resource/value encoding, generated OTLP envelopes, Finch
+transport, a bounded ingress ring, and the Bandit fake collector are implemented.
+Bootstrap greeting functions/tests were intentionally replaced by the real package
+example; they were not a product contract. Logger and metrics adapters are pending.
+
+Use `Config.new/3` for pure resolution, `Config.load/2` for runtime environment
+reads. `:endpoint` means an exact signal endpoint; `:base_endpoint` appends the
+signal path. Defaults and limits are documented in the root README.
+
+Pin Finch to the 0.20 series initially. Generate namespaced gpb modules from vendored
+OTLP schemas v1.5.0. gpb is needed for consumer compilation, not release runtime.
+Decode bounded collector responses to observe partial rejection; no telemetry
+payload ingestion is implemented. This refines the plan's encoding-only shorthand.
+Retry HTTP 502/504 as well as 429/503, following the OTLP specification.
+
+The ingress ring uses fixed ETS slots and atomic sequence numbers. Producer
+notifications are coalesced; batch export happens in a separate linked task with a
+watchdog. A queue plus one in-flight batch is bounded; durability and strict
+cross-producer ordering are not promised. Handles must be reacquired after restart.

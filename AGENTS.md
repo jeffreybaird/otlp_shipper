@@ -12,7 +12,8 @@ This is an Elixir library distributed as a Hex package. Use Mix, ExUnit, doctest
 and the repository's formatter. `mix.exs` declares `:otlp_shipper`, version
 `0.1.0`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
 The planned product ships logs and metrics over OTLP/HTTP; traces are out of scope.
-The current greeting functions are bootstrap examples, not a shipping API design.
+The shared core is implemented; Logger handling and metrics aggregation remain
+subsequent phases.
 Development is authorized. Use Finch directly for HTTP and publish atomic commits
 to the phase branch after checks pass. Public Hex publication requires release authorization.
 
@@ -109,10 +110,9 @@ mix compile --warnings-as-errors
 mix test
 ```
 
-There is no `mix otlp_shipper.verify`, Credo, Dialyzer, or ExDoc task configured yet.
-PLAN.md requires Dialyzer and `mix hex.audit` for release; establish the Dialyzer
-setup when development resumes. The full code-commit gate is format, warnings-as-errors
-compile, tests, and Dialyzer once configured. Add and document tooling when needed; do not claim an unavailable check passed.
+Also run `mix dialyzer` before code commits. CI runs `mix hex.audit`,
+`mix docs --warnings-as-errors`, and `mix hex.build` as well. There is no custom
+verification alias or Credo setup. Do not claim unavailable or skipped checks passed.
 Before handoff, run relevant checks and report failures, skipped checks, and gaps.
 Documentation-only edits need link/content checks, not new behavior tests.
 

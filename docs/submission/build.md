@@ -3,8 +3,7 @@
 ## Prepare locally
 
 Run the verification commands in [../testing.md](../testing.md). Finish metadata,
-license, and implementation work in [readiness.md](readiness.md) first. Add ExDoc
-before relying on `mix docs`; that task is currently unavailable.
+license, and implementation work in [readiness.md](readiness.md) first. ExDoc is configured; `mix docs` generates local documentation.
 
 Once configured, generate and inspect documentation:
 
@@ -47,6 +46,10 @@ warnings as errors, and run an ExUnit smoke test using the documented public API
 Exercise startup and a representative operation if processes or transports exist.
 Also compile the consumer in `MIX_ENV=prod` to detect development-only dependencies.
 This check tests packaged source completeness, not Hex registry resolution.
+
+Run `scripts/package_smoke.sh` to automate the clean consumer/release check. It
+builds a local candidate, uses a disposable project, and verifies encoding without
+gpb or optional tracing modules at runtime.
 
 Record the archive's SHA-256 checksum and tested source revision. Do not edit the
 candidate between review and publication; changed contents require renewed checks.

@@ -9,9 +9,11 @@ mix compile --warnings-as-errors
 mix test
 ```
 
-These match the current CI workflow. For focused iteration use
+CI also runs `mix dialyzer`, `mix hex.audit`, `mix docs --warnings-as-errors`, and
+`scripts/package_smoke.sh` (Hex build plus a fresh consumer release). Run the full code-commit gate through Dialyzer before committing. For focused iteration use
 `mix test test/otlp_shipper_test.exs`; use `mix test --cover` for coverage inspection.
-No browser, database, collector, or production credentials are needed by the scaffold.
+No browser, database, external collector, or production credentials are needed.
+The suite starts an isolated loopback collector.
 
 ## Test layers
 
@@ -58,8 +60,8 @@ instrumentation is part of the feature; do not retest an upstream SDK's internal
 The single pinned CI toolchain does not establish the whole declared version range.
 Before release, exercise the oldest supported Elixir/OTP combination and the current
 supported combination, plus relevant dependency bounds. Record tested versions and
-any gaps. PLAN.md requires Dialyzer and a clean `mix hex.audit` for release. Add their actual
-setup and CI checks during implementation; neither is covered by the current CI.
+any gaps. PLAN.md requires Dialyzer and a clean `mix hex.audit` for release. Both are now
+configured in CI.
 Credo remains optional. There is no Marquee verification alias here.
 
 Follow [submission/build.md](submission/build.md) for the package consumer check.
@@ -91,3 +93,17 @@ retry exhaustion, drop telemetry, and bounded shutdown in transport/process test
 Phase 3 adds the planned opt-in real OTel Collector check using Docker, excluded
 from default CI. Record it separately from fake-collector success. Recheck the
 upstream logs replacement before Phase 1 as required by PLAN.md.
+
+## Phase 0 verification — September 12, 2026
+
+- Local Elixir 1.19.5 / OTP 29.0.1: formatting, warnings-as-errors compile,
+  36 ExUnit tests and 10 doctests, Dialyzer, and ExDoc passed.
+- `mix hex.audit`: no retired dependencies found; this is not a comprehensive
+  vulnerability scan.
+- Clean consumer compile and release encoding passed with the optional tracing API
+  absent and gpb excluded from runtime. The compiler explicitly loads syntax_tools
+  and writes generated BEAM files to the active dependency compile directory.
+- The test collector exercises actual loopback HTTP and generated decoding, not a
+  production collector. Real OTel Collector conformance remains Phase 3.
+- CI is configured to run the package-consumer regression check and the pinned
+  `.tool-versions` pair. Check the Phase 0 PR for the remote CI result.

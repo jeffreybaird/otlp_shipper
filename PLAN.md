@@ -15,6 +15,9 @@ prefix, which is the Erlang OTel org's namespace on Hex.
 - HTTP client: Finch directly. The package owns retry/drop policy.
 - Development authorized. Keep atomic commits and push each one to the phase branch.
 - Phase branches and PR merge boundaries below remain in effect.
+- Protocol refinement: decode bounded export responses to detect partial rejection;
+  telemetry input is never decoded in production. Include OTLP retry codes 502/504
+  alongside 429/503. These refine the encoding-only/retry shorthand below.
 
 These decisions supersede the placeholder and HTTP-client choices below.
 

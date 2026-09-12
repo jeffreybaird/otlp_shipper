@@ -1,16 +1,3 @@
-# CI for a droplet-free Elixir LIBRARY (FRAMEWORK=mix). Copied into the project
-# repo by the bootstrap as .github/workflows/ci.yml.
-#
-# This is the whole pipeline. There is no deploy job because there is nothing to
-# deploy to: a library has no droplet, no DNS, no image and no database — which
-# is why the bootstrap that created it needed no DigitalOcean credentials at
-# all. `bootstrap.sh --no-droplet` builds this.
-#
-# The toolchain comes from .tool-versions in the repo, which erlef/setup-beam
-# reads directly — bumping Elixir or OTP is a commit to the project, never an
-# edit to this file.
-#
-# Required repo config: none. That is the point.
 name: ci
 
 on:
@@ -60,3 +47,15 @@ jobs:
 
       - name: Run tests
         run: mix test
+
+      - name: Static analysis
+        run: mix dialyzer
+
+      - name: Audit dependencies
+        run: mix hex.audit
+
+      - name: Build documentation
+        run: mix docs --warnings-as-errors
+
+      - name: Verify package in a clean production consumer
+        run: scripts/package_smoke.sh

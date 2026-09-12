@@ -9,11 +9,11 @@ Keep `mix.exs`, README, public module docs, and release notes consistent:
 | --- | --- |
 | Application / intended package | `:otlp_shipper` / `otlp_shipper` confirmed for public Hex; ownership unverified |
 | Version | `0.1.0`; scaffold version, not evidence of a published release |
-| Description | Replace TODO with an accurate statement of implemented behavior |
-| License | MIT selected in PLAN.md; add text and matching metadata |
-| Links | Empty; supply real source, docs, and support URLs |
+| Description | Metadata describes intended product; README marks the Phase 0-only state |
+| License | MIT text and matching metadata added |
+| Links | GitHub source URL configured; repo currently private; public docs/support pending |
 | Elixir / OTP support | `~> 1.19` declared; verify and document tested combinations |
-| Dependencies | None configured; document runtime versus optional integrations |
+| Dependencies | Finch and telemetry required; gpb build-time; tracing API optional |
 
 The README should explain installation, a working minimal example, configuration,
 supervision if needed, errors, limitations, and upgrade notes. If the package exports
