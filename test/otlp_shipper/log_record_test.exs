@@ -122,6 +122,21 @@ defmodule OtlpShipper.LogRecordTest do
     assert record.flags == 0
   end
 
+  test "chardata stops traversing once the byte budget is exhausted" do
+    {:ok, limits} = LogRecord.limits(max_body_bytes: 32)
+    input = [String.duplicate("x", 1000), {:must_not_visit, :truncated_tail}]
+    assert {:ok, record} = LogRecord.new(event({:string, input}), limits)
+    assert record.body.value == {:string_value, String.duplicate("x", 24)}
+  end
+
+  test "structured reports support structs and keep normalized keys unique" do
+    assert {:ok, record} = LogRecord.new(event({:report, URI.parse("https://example.test")}))
+    assert {:kvlist_value, %{values: values}} = record.body.value
+    assert Enum.find(values, &(&1.key == "host")).value.value == {:string_value, "example.test"}
+    assert {:ok, record} = LogRecord.new(event({:report, [{:a, 1}, {"a", 2}]}))
+    assert {:kvlist_value, %{values: [%{key: "a"}]}} = record.body.value
+  end
+
   defp event(msg, meta \\ %{}), do: %{level: :info, msg: msg, meta: meta}
   defp limits, do: elem(LogRecord.limits(), 1)
 

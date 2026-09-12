@@ -161,6 +161,9 @@ defmodule OtlpShipper.LogRecord do
     if encoded_size(value) <= budget, do: value, else: bounded_string("[truncated]", budget)
   end
 
+  defp bounded_pairs(pairs, budget, depth) when is_map(pairs),
+    do: bounded_pairs(Map.to_list(pairs), budget, depth)
+
   defp bounded_pairs(pairs, budget, depth) do
     bounded_collection(pairs, :kvlist_value, budget, fn {key, value}, remaining ->
       key = key |> normalize_key() |> truncate_utf8(div(remaining, 4))
@@ -180,9 +183,16 @@ defmodule OtlpShipper.LogRecord do
           candidate = %{value: {type, %{values: Enum.reverse([value | values])}}}
           size = encoded_size(candidate)
 
-          if size <= budget,
-            do: {:cont, {[value | values], budget - size - 8}},
-            else: {:halt, {values, remaining}}
+          cond do
+            type == :kvlist_value and Enum.any?(values, &(&1.key == value.key)) ->
+              {:cont, {values, remaining}}
+
+            size <= budget ->
+              {:cont, {[value | values], budget - size - 8}}
+
+            true ->
+              {:halt, {values, remaining}}
+          end
         end
       end)
 
@@ -218,11 +228,55 @@ defmodule OtlpShipper.LogRecord do
   defp normalize_key(key), do: inspect(key, limit: 8, printable_limit: 128)
 
   defp bounded_chardata(text, budget) do
-    case :unicode.characters_to_binary(text) do
-      binary when is_binary(binary) -> truncate_utf8(binary, budget)
-      _ -> "[invalid chardata]"
+    case take_chardata([text], budget, budget * 2, []) do
+      {:ok, chunks} -> chunks |> Enum.reverse() |> IO.iodata_to_binary()
+      :error -> "[invalid chardata]"
     end
   end
+
+  # Traverse only a bounded prefix, including empty/nested lists. Flattening a
+  # complete charlist first would allocate an unbounded temporary binary.
+  defp take_chardata(_, remaining, steps, chunks) when remaining <= 0 or steps <= 0,
+    do: {:ok, chunks}
+
+  defp take_chardata([], _, _, chunks), do: {:ok, chunks}
+
+  defp take_chardata([[] | rest], remaining, steps, chunks),
+    do: take_chardata(rest, remaining, steps - 1, chunks)
+
+  defp take_chardata([[head | tail] | rest], remaining, steps, chunks),
+    do: take_chardata([head, tail | rest], remaining, steps - 1, chunks)
+
+  defp take_chardata([text | rest], remaining, steps, chunks) when is_binary(text) do
+    size = min(byte_size(text), remaining)
+    prefix = binary_part(text, 0, size)
+
+    case :unicode.characters_to_binary(prefix) do
+      binary when is_binary(binary) ->
+        take_chardata(rest, remaining - size, steps - 1, [binary | chunks])
+
+      {:incomplete, binary, _} when size < byte_size(text) ->
+        {:ok, [binary | chunks]}
+
+      _ ->
+        :error
+    end
+  end
+
+  defp take_chardata([char | rest], remaining, steps, chunks) when is_integer(char) do
+    case :unicode.characters_to_binary([char]) do
+      binary when is_binary(binary) and byte_size(binary) <= remaining ->
+        take_chardata(rest, remaining - byte_size(binary), steps - 1, [binary | chunks])
+
+      binary when is_binary(binary) ->
+        {:ok, chunks}
+
+      _ ->
+        :error
+    end
+  end
+
+  defp take_chardata(_, _, _, _), do: :error
 
   defp encoded_size(value) do
     value
