@@ -1,0 +1,66 @@
+# Planned OTLP architecture
+
+This guide summarizes [../PLAN.md](../PLAN.md); it does not describe completed code.
+Confirmed: `otlp_shipper`, module root `OtlpShipper`, public Hex, Finch directly.
+
+## One package, independent signals
+
+The log handler and metrics reporter share the core and never depend on each other.
+Keep the log handler replaceable if upstream SDK support makes it unnecessary.
+The consumer chooses which components to start. Traces remain outside this package.
+
+| Planned component | Responsibility |
+| --- | --- |
+| Config | Explicit options over OTEL environment configuration; per-signal settings and endpoint rules |
+| Resource | Service identity and extra attributes; require `service.name` at startup |
+| Value | Shared generated-message inputs for AnyValue, KeyValue, and Resource |
+| Transport | OTLP/HTTP POST, headers, gzip, timeouts, bounded retry and failure reporting |
+| Buffer | Batching, periodic/size flush, bounded retention, shutdown flush |
+| LogHandler | Logger event conversion, severity, correlation, metadata filtering and truncation |
+| MetricsReporter | Telemetry.Metrics attachment, tag/unit conversion, interval aggregation |
+
+Separate environment reads from pure configuration resolution for deterministic
+doctests. Validate the OTLP endpoint path and signal-specific precedence against the
+spec when implementing; generic and signal endpoints have different path semantics.
+
+## Dependency and packaging constraints
+
+Vendor the needed `.proto` sources with upstream version/provenance and notices.
+Generate protobuf code; never hand-write encoding. The plan prefers gpb at build time
+with `runtime: false`. That flag alone does not prove generated code has no runtime
+dependency: verify the generated encoders in a production consumer. Include every
+input and build step needed when Hex compiles the package outside this checkout.
+
+Keep `telemetry_metrics` and `telemetry` required, and `opentelemetry_api` optional
+with guarded use. Do not load the full SDK or gRPC stack by default. The exporter
+fallback requires the plan's timeboxed spike and a documented reason. Finch is the
+selected HTTP client. Keep its supervised pools isolated from host configuration.
+
+## Resource limits and errors
+
+Bound ingress/mailboxes as well as stored batches: truncating GenServer state does
+not bound pending casts. Logs drop oldest on overflow and count losses. Cap log
+bodies and attributes and report dropped attributes accurately. Define the metrics
+series limit decision explicitly; tag cardinality can otherwise exhaust memory.
+
+The plan calls for retries on 429/503 and transport errors, exponential backoff with
+jitter, `Retry-After`, and dropping after bounded attempts. Keep work off the caller's
+logging/event path. A lost response can cause duplicate delivery; document that
+boundary. Shutdown flush is bounded best effort, not durable delivery after a crash.
+
+Emit the planned export stop/exception and dropped telemetry events. Document
+measurement units, status values, reasons, and what the counts mean. Diagnostics
+use a filtered domain and rate limiting so an export failure cannot feed itself.
+Exclude the reporter's own diagnostics from configurations that would recurse.
+
+## Metrics contract
+
+Counters become monotonic sums; sums track whether negative measurements occur;
+last values become gauges; distributions use explicit histogram bounds. Refuse
+summaries at initialization with a stable tagged error naming the unsupported type;
+consumer-facing documentation explains using distributions instead.
+
+Use delta aggregation with interval start/end timestamps. Transform tag values and
+units before aggregation. Convert output units as specified in the plan. Emit
+nothing for a series with no events. Document gauge handling separately from delta
+sum/histogram temporality, and test consecutive intervals.
