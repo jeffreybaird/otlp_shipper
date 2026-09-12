@@ -4,9 +4,89 @@ An Elixir package for bounded OTLP/HTTP log shipping and `Telemetry.Metrics`
 reporting. Finch provides HTTP connection pooling; the package owns buffering,
 retry deadlines, and drop reporting. No full OpenTelemetry SDK is required.
 
-**Status: Phase 0 core only.** The Logger handler and metrics reporter are not
-implemented yet. This repository has not been published to Hex. Public Hex and MIT
+**Status: Phase 1 logs and shared core implemented.** Metrics aggregation remains
+Phase 2; real Collector conformance and release preparation remain Phase 3. This repository has not been published to Hex. Public Hex and MIT
 are the intended distribution; the source repository is currently private.
+
+## Logger setup
+
+Add the handler to your application's supervision tree:
+
+```elixir
+children = [
+  {OtlpShipper.LogHandler,
+   service_name: "checkout",
+   endpoint: "http://localhost:4318/v1/logs"}
+]
+
+Supervisor.start_link(children, strategy: :one_for_one)
+# Ordinary Logger calls now enter the bounded export queue.
+require Logger
+Logger.info("checkout complete", order_id: "example-42")
+```
+
+The handler owns its Finch pool, buffer, and Logger registration. Configure headers,
+compression, resources, and limits through the same child options listed below.
+`OTEL_SERVICE_NAME` and OTEL endpoint variables can replace explicit service/endpoint
+options. Missing `service.name` or invalid configuration prevents startup with a
+tagged error. This package does not change the application's primary Logger level.
+
+The default handler ID is `:otlp_shipper`; default process names are
+`OtlpShipper.LogHandler.Finch` and `OtlpShipper.LogHandler.Buffer`. For multiple
+instances, supply distinct atom constants as `:handler_id`, `:finch_name`, and
+`:buffer_name`. An optional `:name` registers the supervisor. Do not install this
+handler through `:logger.add_handler/3` directly; startup owns registration.
+
+A buffer/pool restart refreshes the handler's producer handle. Pool restart allows
+up to one second for old named descendants to finish shutting down. Shutdown
+removes the handler first, then drains the queue within `shutdown_ms`. Crashes and
+restart gaps can lose logs; this is not a durable audit-log sink. An operator removing
+the Logger handler intentionally disables export until the component restarts.
+
+## Log conversion and correlation
+
+Plain messages become strings; map/keyword reports become OTLP key-value bodies.
+The recipe's eight Erlang severity mappings are preserved. Logger internals such as
+PID, source location, domain, and report callbacks are omitted from attributes.
+Remaining metadata becomes typed attributes. Report callbacks are not executed.
+
+| Logger option | Default / behavior |
+| --- | --- |
+| `level` | `:info`; Logger's primary level also applies |
+| `max_body_bytes` | 16,384 encoded AnyValue bytes |
+| `max_attribute_bytes` | 1,024 encoded AnyValue bytes per value; separate key byte limit |
+| `max_attributes` | 64; zero excludes and counts all eligible attributes |
+| `diagnostic_interval_ms` | 60,000; first failure and at most one warning per interval |
+
+Byte limits must be at least 32. Strings truncate at UTF-8 boundaries. Nested
+containers stop at the byte budget, 64 entries per container, or depth eight;
+charlist traversal has a bounded step budget. Normalized duplicate keys retain the
+first entry. Oversized keys and excess/colliding attributes increment
+`dropped_attributes_count`; value truncation and deliberately excluded Logger
+internals do not. Body truncation has no OTLP dropped-attributes counter. Total
+record/request limits still apply, so records or batches can be dropped even after
+individual values fit. These limits are not secret redaction: filter sensitive data
+before logging it.
+
+With the optional `opentelemetry_api`, logs inside a current span carry its 16-byte
+trace ID, 8-byte span ID, and sampled flag. The full SDK is only a test dependency.
+A valid explicit `otel_trace_id` / `otel_span_id` pair on the event takes precedence;
+raw bytes, fixed-width hex, and positive integers are accepted. IDs never become
+ordinary attributes. Without tracing or valid metadata, IDs are empty.
+
+API 1.5 can leave stale Logger process IDs after detaching a span. With the API
+installed, inherited process IDs without an active span are ignored. For forwarded
+logs without a current span, supply a distinct pair directly on the log event.
+No tracing or Logger process configuration is changed by this handler.
+
+## When to use another exporter
+
+Trace export belongs to the OpenTelemetry SDK/exporter. Metrics definitions are not
+yet accepted by this package. Before adopting the logs handler, check whether
+[`opentelemetry_experimental`](https://hex.pm/packages/opentelemetry_experimental)
+has released working OTLP log support; replacing this temporary gap is preferable
+to maintaining two log exporters. The Phase 1 recheck still found release 0.5.1.
+Do not use this package when durable or exactly-once log delivery is required.
 
 ## Shared core
 
@@ -16,8 +96,8 @@ are the intended distribution; the source repository is currently private.
 - `OtlpShipper.Transport`: Finch POST, gzip, bounded retries, partial-response handling.
 - `OtlpShipper.Buffer`: fixed-capacity ingress and one supervised batch worker.
 
-The core accepts OTLP message maps. It does not yet convert Logger events or
-aggregate metric definitions. Logs and metrics will use the same core independently.
+The core accepts OTLP message maps. `OtlpShipper.LogHandler` converts Logger events;
+metric aggregation remains pending. Both signals use the core independently.
 Trace export is outside this package's scope.
 
 ## Core example
@@ -107,12 +187,19 @@ can cause duplicate delivery. An HTTP 200 with partial rejection is reported as
 | `[:otlp_shipper, :dropped]` | `count` | `signal`, `reason` |
 
 Drop reasons include `:queue_full`, `:export_failed`, `:item_too_large`, and
-`:shutdown`. `count` on export is the attempted record/data-point count supplied to
+`:shutdown`, `:invalid_log_event`, and `:unavailable`. `count` on export is the attempted record/data-point count supplied to
 transport. One stop event is emitted per logical export, not per HTTP retry. Callback
 crashes/timeouts are reported by the buffer as drops. Custom export callbacks own
 their ordinary failure diagnostics; `Transport.export/4` handles these for HTTP.
 Never report these events back through the same exporter recursively. Response
 bodies and credentials are not included in diagnostics.
+
+The Logger adapter emits rate-limited warnings through domain `[:otlp_shipper]`.
+It excludes this domain, its own implementation, and Finch/Mint/NimblePool internal
+logs from export. Synchronous telemetry subscribers that log during ingress cannot
+re-enter the handler. HTTP work runs with the excluded domain too. Other Logger
+handlers still receive diagnostics. Subscriber code must not create asynchronous
+feedback loops or perform slow work in a logging callback.
 
 ## Development
 

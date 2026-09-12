@@ -3,12 +3,13 @@
 These documents adapt Page Monitor's repository workflow for an Elixir Hex library
 and carry over the applicable style from Marquee's `CLAUDE.md` and `.claude/` files.
 The source repositories remain unchanged. [../PLAN.md](../PLAN.md) supplies the
-package design; Phase 0 development is authorized.
+package design; Phase 1 logs development is authorized. Metrics remain the next
+phase after this phase is merged.
 
 | Document | Use |
 | --- | --- |
 | [Product decisions](product-decisions.md) | Known scope, scaffold facts, unresolved contracts |
-| [Architecture](architecture.md) | Planned core, dependencies, signal boundaries |
+| [Architecture](architecture.md) | Implemented core/logs, planned metrics, dependencies |
 | [Elixir style](elixir-style.md) | Functions, errors, documentation, side effects |
 | [Interface design](interface-design.md) | Consumer API and compatibility |
 | [Testing](testing.md) | ExUnit, adapters, processes, consumer checks |

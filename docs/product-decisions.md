@@ -63,7 +63,8 @@ the handler. The plan's ecosystem/version claims are research inputs to recheck,
 not permanent facts this documentation independently verifies.
 
 The plan references a handler recipe and binary fixture in `elixir_as_inf`; neither
-was inspected or copied by this task. Verify access and provenance before reuse.
+was inspected during the initial documentation pass. Phase 1 inspection and fixture
+provenance are recorded below.
 The plan reports the hub's metrics endpoint is not ready. Use the fake collector and
 real OTel Collector for conformance instead of making the hub a development dependency.
 
@@ -103,3 +104,19 @@ provenance. Preserve its severity mapping, structured report bodies, and interna
 metadata exclusions. Record conversion uses bounded AnyValue encoding, validates
 complete trace/span ID pairs, and counts omitted attributes separately from
 truncated values. The full SDK remains outside the runtime dependency graph.
+
+## Phase 1 implementation record
+
+The supervised Logger adapter and record conversion are implemented. See README for
+startup ownership, independent instance names, byte/count defaults, and exclusions.
+The original recipe fixture is copied unchanged under `test/fixtures/otlp` and
+compared at the record level after generated encoding/decoding. Instrumentation scope
+identifies `otlp_shipper` instead of the original copied handler's `Elixir.Logger`.
+
+The tracing SDK is test-only; optional API calls remain guarded. A real-span test
+exposed stale process metadata after detaching to an empty context in API 1.5.
+Ignore inherited IDs in that case; a distinct event-level pair is still respected.
+
+Finch's killed supervisor can leave named descendants briefly alive. Restart retries
+for at most one second only after that tree successfully started once. Initial name
+collisions remain failures. This prevents a tight restart-intensity failure loop.

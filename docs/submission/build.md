@@ -48,7 +48,7 @@ Also compile the consumer in `MIX_ENV=prod` to detect development-only dependenc
 This check tests packaged source completeness, not Hex registry resolution.
 
 Run `scripts/package_smoke.sh` to automate the clean consumer/release check. It
-builds a local candidate, uses a disposable project, and verifies encoding without
+builds a local candidate, uses a disposable project, and verifies encoding and real Logger-to-loopback HTTP delivery without
 gpb or optional tracing modules at runtime.
 
 Record the archive's SHA-256 checksum and tested source revision. Do not edit the

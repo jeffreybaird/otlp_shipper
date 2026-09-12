@@ -1,7 +1,7 @@
 # Package metadata and consumer documentation
 
 This is a preparation checklist, not ready-to-paste marketing copy. PLAN.md targets
-OTLP/HTTP logs and metrics; neither component is implemented yet.
+OTLP/HTTP logs and metrics; the Logger adapter is implemented and metrics aggregation remains planned.
 
 Keep `mix.exs`, README, public module docs, and release notes consistent:
 
@@ -9,7 +9,7 @@ Keep `mix.exs`, README, public module docs, and release notes consistent:
 | --- | --- |
 | Application / intended package | `:otlp_shipper` / `otlp_shipper` confirmed for public Hex; ownership unverified |
 | Version | `0.1.0`; scaffold version, not evidence of a published release |
-| Description | Metadata describes intended product; README marks the Phase 0-only state |
+| Description | Metadata describes intended product; README marks the Phase 1 logs state |
 | License | MIT text and matching metadata added |
 | Links | GitHub source URL configured; repo currently private; public docs/support pending |
 | Elixir / OTP support | `~> 1.19` declared; verify and document tested combinations |
