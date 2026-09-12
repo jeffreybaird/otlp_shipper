@@ -24,7 +24,9 @@ for the exact reviewed source/archive and check results.
 ## Before publication
 
 1. Obtain explicit release authorization and finish the Phase 3 review/merge.
-2. Confirm the publishing account and name ownership/availability. The public
+2. Confirm the publishing account and name ownership/availability. The local
+   publish dry run stopped at authentication; rerun it through the authorized
+   publisher flow before release. The public
    [Hex package API](https://hex.pm/api/packages/otlp_shipper) returned 404 on
    September 12, 2026. That is a read-only availability observation, not a name
    reservation or proof of permission to publish.

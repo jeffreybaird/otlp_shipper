@@ -24,7 +24,9 @@ mix hex.publish --dry-run
 
 Choose a fresh temporary output directory for each candidate. `hex.build` creates
 a local archive; `--unpack` enables inspection of its source contents. The publish
-dry run performs local checks without uploading. Consult installed task help if
+dry run performs local checks without uploading, but the installed Hex task still
+requires publisher authentication. If it stops there, record that result; do not
+authenticate merely to turn the dry run green. Consult installed task help if
 options differ. See [Hex build](https://hex.hexdocs.pm/Mix.Tasks.Hex.Build.html)
 and [Hex publish](https://hex.hexdocs.pm/Mix.Tasks.Hex.Publish.html).
 
