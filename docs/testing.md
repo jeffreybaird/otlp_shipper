@@ -107,3 +107,8 @@ upstream logs replacement before Phase 1 as required by PLAN.md.
   production collector. Real OTel Collector conformance remains Phase 3.
 - CI is configured to run the package-consumer regression check and the pinned
   `.tool-versions` pair. Check the Phase 0 PR for the remote CI result.
+
+Collector/process assertions allow up to one second for message delivery on shared
+CI runners. This addresses the observed first-request timeout at ExUnit's default
+100 ms; payload assertions and explicit transport deadlines are unchanged. No test
+retry or skip is enabled.
