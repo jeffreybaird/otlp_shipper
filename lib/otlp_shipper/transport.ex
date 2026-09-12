@@ -46,6 +46,8 @@ defmodule OtlpShipper.Transport do
   end
 
   defp safely_export(config, finch, body, deadline) do
+    Logger.metadata(domain: [:otlp_shipper])
+
     {body, compression_headers} =
       case config.compression do
         :gzip -> {:zlib.gzip(body), [{"content-encoding", "gzip"}]}
