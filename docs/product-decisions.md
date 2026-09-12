@@ -88,3 +88,18 @@ The ingress ring uses fixed ETS slots and atomic sequence numbers. Producer
 notifications are coalesced; batch export happens in a separate linked task with a
 watchdog. A queue plus one in-flight batch is bounded; durability and strict
 cross-producer ordering are not promised. Handles must be reacquired after restart.
+
+## Phase 1 upstream recheck — September 12, 2026
+
+The Hex package APIs still list `opentelemetry` 1.7.0 and
+`opentelemetry_experimental` 0.5.1 as the latest releases:
+[stable SDK](https://hex.pm/api/packages/opentelemetry) and
+[experimental SDK](https://hex.pm/api/packages/opentelemetry_experimental).
+No newer experimental release has replaced the version investigated by the recipe.
+Proceed with the log handler as planned; recheck again before release.
+
+Read the local `elixir_as_inf/examples/otlp_log_handler.ex` recipe and its fixture
+provenance. Preserve its severity mapping, structured report bodies, and internal
+metadata exclusions. Record conversion uses bounded AnyValue encoding, validates
+complete trace/span ID pairs, and counts omitted attributes separately from
+truncated values. The full SDK remains outside the runtime dependency graph.
