@@ -12,8 +12,8 @@ This is an Elixir library distributed as a Hex package. Use Mix, ExUnit, doctest
 and the repository's formatter. `mix.exs` declares `:otlp_shipper`, version
 `0.1.0`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
 The planned product ships logs and metrics over OTLP/HTTP; traces are out of scope.
-The shared core is implemented; Logger handling and metrics aggregation remain
-subsequent phases.
+The shared core and supervised Logger handling are implemented; metrics aggregation
+remains Phase 2. Real Collector conformance and release preparation remain Phase 3.
 Development is authorized. Use Finch directly for HTTP and publish atomic commits
 to the phase branch after checks pass. Public Hex publication requires release authorization.
 

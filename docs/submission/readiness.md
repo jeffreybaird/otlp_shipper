@@ -1,6 +1,7 @@
 # Hex release readiness
 
-Status: **not ready for publication**. Phase 0 is implemented; the Logger handler and metrics reporter remain unbuilt. This is
+Status: **not ready for publication**. The shared core and Logger handler are implemented;
+metrics aggregation and real Collector conformance remain unfinished. This is
 a manual checklist, not an implemented gate or a record of passing release tests.
 
 Before the first release:
@@ -28,10 +29,10 @@ Build output is not proof of functionality, account ownership, or publication.
 Only publish when the user has requested or authorized release. No Hex credentials,
 account changes, uploads, or publishing automation are established by this task.
 
-## Phase 0 evidence
+## Implementation evidence
 
-MIT text, dependencies, generated protobuf, ExDoc, Dialyzer, and shared-core tests
+MIT text, dependencies, generated protobuf, ExDoc, Dialyzer, core and Logger tests
 are present. Local checks and a production consumer smoke test passed; see
-[../testing.md](../testing.md). The complete product, pinned remote CI run, real
-collector conformance, final package-name ownership check, and publication are
-still pending. Do not treat this core-only candidate as a finished 0.1.0 release.
+[../testing.md](../testing.md). Metrics aggregation, real collector conformance, final package-name ownership
+checks, and publication are still pending. Phase 0 pinned CI passed before merge;
+check the Phase 1 PR for this candidate. This is not a finished 0.1.0 release.

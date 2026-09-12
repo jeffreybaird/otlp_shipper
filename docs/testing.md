@@ -112,3 +112,20 @@ Collector/process assertions allow up to one second for message delivery on shar
 CI runners. This addresses the observed first-request timeout at ExUnit's default
 100 ms; payload assertions and explicit transport deadlines are unchanged. No test
 retry or skip is enabled.
+
+## Phase 1 verification — September 12, 2026
+
+Local Elixir 1.19.5 / OTP 29.0.1 checks cover 60 tests and 13 doctests, including
+real SDK span correlation, no IDs after detach, 503/503/200 retry delivery, gzip,
+401 telemetry and filtered diagnostics, a 10,000-event bounded Logger burst, worker/
+buffer/registration/pool recovery, shutdown flush, and independent instances.
+The SDK is test-only and its trace exporter is disabled. Original Phase 0 tests
+remain intact. The recorded recipe fixture is copied unchanged and compared at
+the record level; scope identity and attribute ordering intentionally differ.
+
+The clean consumer release also starts the handler and delivers a real log over
+loopback HTTP while both tracing API and gpb are absent at runtime. Guarded optional
+API references have targeted compile annotations so absent tracing does not produce
+undefined-module warnings. ExDoc, Dialyzer, formatting, warnings-as-errors compile,
+and Hex retirement audit run with the standard gate. Verify the final Phase 1 PR
+head's CI result separately; real Collector conformance remains Phase 3.

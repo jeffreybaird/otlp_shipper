@@ -2,10 +2,11 @@ defmodule OtlpShipper do
   @moduledoc """
   Bounded OTLP/HTTP shipping for Elixir.
 
-  Phase 0 provides `OtlpShipper.Config`, `OtlpShipper.Resource`,
+  The shared core provides `OtlpShipper.Config`, `OtlpShipper.Resource`,
   `OtlpShipper.Value`, `OtlpShipper.Encoder`, `OtlpShipper.Transport`, and
-  `OtlpShipper.Buffer`. Logger handling and metric aggregation follow in later
-  phases. Core interfaces are pre-release and may change before publication.
+  `OtlpShipper.Buffer`. Add `OtlpShipper.LogHandler` to your supervision tree
+  for Logger export with optional span correlation. Metrics aggregation is planned
+  for Phase 2. Interfaces are pre-release and may change before publication.
 
   Resolve configuration before starting a component:
 

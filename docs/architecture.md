@@ -1,6 +1,7 @@
-# Planned OTLP architecture
+# OTLP architecture
 
-This guide summarizes [../PLAN.md](../PLAN.md); it does not describe completed code.
+This guide summarizes [../PLAN.md](../PLAN.md). The shared core and Logger adapter
+are implemented; the metrics contract remains planned.
 Confirmed: `otlp_shipper`, module root `OtlpShipper`, public Hex, Finch directly.
 
 ## One package, independent signals
@@ -64,3 +65,19 @@ Use delta aggregation with interval start/end timestamps. Transform tag values a
 units before aggregation. Convert output units as specified in the plan. Emit
 nothing for a series with no events. Document gauge handling separately from delta
 sum/histogram temporality, and test consecutive intervals.
+
+## Logger lifecycle
+
+The consumer starts `OtlpShipper.LogHandler`, a rest-for-one supervisor owning Finch,
+a named Buffer, and registration. Registration is last so shutdown removes ingress
+before draining and buffer restarts replace the handler handle. A per-tree token
+prevents registration from replacing another owner's handler. Killed registration
+can reinstall its own handler; pool startup tolerates a bounded descendant teardown
+race after a successful first start. Names are explicit atom options per instance.
+
+LogRecord is the pure conversion boundary. The handler reads optional current-span
+context in the logging process and rejects inherited stale process IDs after span
+detach. Buffer enqueue uses ETS directly; HTTP stays in the batch worker. Diagnostics
+are rate limited with shared atomics and an excluded Logger domain. HTTP implementation
+logs are filtered, and a process-local ingress guard prevents synchronous telemetry
+subscribers from recursively exporting their own log messages.
