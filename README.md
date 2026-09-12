@@ -314,7 +314,23 @@ scripts/package_smoke.sh
 ```
 
 Tests use a loopback Bandit collector and generated decoders, with no external
-collector or production credentials. Real OTel Collector conformance is Phase 3.
+collector or production credentials. Run real Collector conformance separately with
+a local Docker engine (not a remote Docker context):
+
+```sh
+docker pull otel/opentelemetry-collector@sha256:e495787f07dbe432ce763ebaf5bc3d113850e9eee2250ade7a3da6a882d0d69a
+mix otlp_shipper.conformance
+```
+
+This pins official Collector **0.160.0**. The task uses an ephemeral loopback port,
+a read-only configuration mount, and synthetic gzip logs and metrics from a separate
+VM with inherited `OTEL_*` variables removed. It checks the detailed debug exporter's
+log body, severity, attributes, metric types, delta temporality, values, and histogram
+buckets. No credentials or backend account are needed. Docker commands have 30-second
+deadlines; readiness/output checks allow 60 polls. Its own container is removed on
+success or failure. If the VM is killed, remove the printed container name manually.
+A missing image, stopped engine, or blocked bind mount causes the task to fail;
+check Docker and the pull command first. Default tests and CI do not invoke Docker.
 CI uses `.tool-versions`; local verification must report any different toolchain.
 
 OTLP schema sources are vendored from `opentelemetry-proto` v1.5.0 with their
