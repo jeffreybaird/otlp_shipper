@@ -1,6 +1,8 @@
 # Runs in a separate VM with OTEL_* variables removed by the conformance task.
 import Telemetry.Metrics
 
+{:ok, _} = Application.ensure_all_started(:otlp_shipper)
+
 [endpoint] = System.argv()
 owner = self()
 

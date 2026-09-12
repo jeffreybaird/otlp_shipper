@@ -40,7 +40,7 @@ defmodule OtlpShipper.Conformance do
                execute(
                  command,
                  "mix",
-                 ["run", "--no-compile", "#{priv}/conformance/emit.exs", endpoint],
+                 ["run", "--no-compile", "--no-start", "#{priv}/conformance/emit.exs", endpoint],
                  env: clean_environment(System.get_env())
                ),
              :ok <- await_output(command, name, &(verify(&1) == :ok)) do

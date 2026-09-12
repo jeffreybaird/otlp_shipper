@@ -75,8 +75,8 @@ defmodule OtlpShipper.ConformanceTest do
     assert "127.0.0.1::4318" in run_args
     assert "--pull=never" in run_args
 
-    assert_receive {:command, "mix", ["run", "--no-compile", script, "http://127.0.0.1:49152"],
-                    opts}
+    assert_receive {:command, "mix",
+                    ["run", "--no-compile", "--no-start", script, "http://127.0.0.1:49152"], opts}
 
     assert String.ends_with?(script, "/conformance/emit.exs")
     assert Keyword.has_key?(opts, :env)
