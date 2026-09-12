@@ -1,38 +1,46 @@
 # Hex release readiness
 
-Status: **not ready for publication**. The shared core, Logger handler, and metrics reporter
-are implemented; real Collector conformance and release verification remain unfinished. This is
-a manual checklist, not an implemented gate or a record of passing release tests.
+Status: **Phase 3 implementation and local preparation complete; publication pending**.
+This is a 0.1.0 candidate, not a published release. See [candidate.md](candidate.md)
+for the exact reviewed source/archive and check results.
 
-Before the first release:
+## Prepared
 
-- Resolve the owner decisions in PLAN.md and implement its agreed public contract. Replace greeting
-  examples and placeholder descriptions with accurate consumer documentation.
-- Add the MIT license text selected in PLAN.md; align package metadata with it.
-  Record real package ownership and appropriate source/support links for the selected public or private distribution.
-- Confirm the intended Hex package name is available or owned by the publisher.
-- Establish tested Elixir/OTP and dependency compatibility; make the declared
-  requirements truthful. Runtime dependencies must be available to consumers.
-- Configure Dialyzer, run `mix dialyzer` and `mix hex.audit`, and triage findings.
-- Run the planned real-collector conformance check for both signals; local fake
-  collector tests alone do not establish interoperability.
-- Add ExDoc as development tooling, document the public API, and inspect generated
-  docs. Add release notes with compatibility and migration details.
-- Run the current verification gate and relevant integration tests. Follow
-  [build.md](build.md) to inspect package contents and test a fresh consumer.
-- Review [package-listing.md](package-listing.md), [reviewer-notes.md](reviewer-notes.md),
-  and [../data-handling.md](../data-handling.md) against actual shipped behavior.
-- Record the source commit, version, toolchain, archive checksum, executed checks,
-  known limitations, and unresolved blockers for the specific candidate.
+- MIT license, package metadata, README quickstarts for each component, configuration
+  and telemetry tables, API documentation, and initial release notes.
+- Bounded Logger and Telemetry.Metrics implementations, generated protobuf, and
+  deterministic HTTP/process/regression coverage.
+- Opt-in `mix otlp_shipper.conformance`: real Collector 0.160.0 parses synthetic
+  gzip logs and all four metric types and exposes the expected decoded values.
+- Formatting, compilation with warnings as errors, ExUnit/doctests, Dialyzer,
+  ExDoc, and Hex retirement audit. Retirement audit is not a vulnerability scan.
+- Fresh production release delivery with no runtime gpb, with optional tracing
+  absent, and at declared dependency lower bounds with API 1.3.0 present.
+- CI on the pinned Elixir 1.19.5 / OTP 28.5.0.2 pair plus minimum Elixir 1.19.0 /
+  OTP 28.0. Consult the candidate's exact CI result before publishing.
+- Deliberate archive file list, vendored protocol provenance/license, and local
+  source/archive inspection. Follow [build.md](build.md) to reproduce.
 
-Build output is not proof of functionality, account ownership, or publication.
-Only publish when the user has requested or authorized release. No Hex credentials,
-account changes, uploads, or publishing automation are established by this task.
+## Before publication
 
-## Implementation evidence
+1. Obtain explicit release authorization and finish the Phase 3 review/merge.
+2. Confirm the publishing account and name ownership/availability. The public
+   [Hex package API](https://hex.pm/api/packages/otlp_shipper) returned 404 on
+   September 12, 2026. That is a read-only availability observation, not a name
+   reservation or proof of permission to publish.
+3. Resolve public source/support access. GitHub currently reports this repository
+   as **private**. The configured source links will not work for public consumers.
+   Making the repository public is a separate owner action.
+4. Recheck [upstream experimental releases](https://hex.pm/packages/opentelemetry_experimental)
+   before publishing. The API still reported 0.5.1 on September 12, 2026; no newer
+   released replacement was available for reassessment. Do not generalize the
+   Phase 1 findings to all development snapshots.
+5. Rebuild from the approved release revision and repeat checks if packaged contents
+   changed. Record the new archive checksum and source revision; do not assume a
+   merge commit creates the identical candidate without comparing it.
+6. Follow the publisher's normal authentication flow, publish only the reviewed
+   package/docs, and verify a fresh consumer fetching the exact public Hex version.
 
-MIT text, dependencies, generated protobuf, ExDoc, Dialyzer, core, Logger, and metrics tests
-are present. Local checks and a production consumer smoke test passed; see
-[../testing.md](../testing.md). Real collector conformance, final package-name ownership
-checks, and publication are still pending. Earlier phase CI passed before merge;
-check the Phase 2 PR for this candidate. This is not a finished 0.1.0 release.
+No Hex credential changes, publication, source visibility changes, release tags,
+or GitHub release uploads are part of this preparation. Known behavior limits and
+compatibility caveats are documented in the README and candidate evidence.

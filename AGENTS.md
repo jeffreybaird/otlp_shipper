@@ -13,7 +13,8 @@ and the repository's formatter. `mix.exs` declares `:otlp_shipper`, version
 `0.1.0`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
 The planned product ships logs and metrics over OTLP/HTTP; traces are out of scope.
 The shared core, supervised Logger handling, and metrics reporter are implemented
-through Phase 2. Real Collector conformance and release preparation remain Phase 3.
+through Phase 3, including opt-in real Collector conformance and local release
+preparation. Publication remains separately authorized.
 Development is authorized. Use Finch directly for HTTP and publish atomic commits
 to the phase branch after checks pass. Public Hex publication requires release authorization.
 

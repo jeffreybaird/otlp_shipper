@@ -1,23 +1,30 @@
 # Changelog
 
-## Unreleased
+## Unreleased — 0.1.0 candidate
 
-- Phase 0: generated OTLP protobuf, validated configuration/resources, Finch transport,
-  bounded ingress, and local collector tests.
-- Replace the bootstrap greeting examples with package documentation.
-- Decode bounded collector responses for partial acceptance and retry the full
-  OTLP HTTP retryable status set (429/502/503/504).
-- Phase 1: supervised Logger handler, bounded record conversion, optional span
-  correlation, automatic recovery, and rate-limited nonrecursive diagnostics.
-- Guard against stale process trace IDs after span detach and Finch teardown races.
-- Bound charlist traversal, support struct reports, and deduplicate report keys.
-- Preserve the recorded recipe's log payload contract; exercise log delivery in a
-  fresh consumer release without the optional tracing API or build-time gpb.
-- Phase 2: Telemetry.Metrics counters, sums, gauges, and explicit-bound delta
-  histograms with transformed tags, units, filtering, bounded ingress/series, and
-  supervised handler cleanup. Summaries are rejected in favor of distributions.
-- Keep histogram bounds distinct after double conversion and copy small tag
-  slices to prevent large backing-binary retention.
-- Share Finch pool recovery between independent log and metric pipelines; verify
-  both signals in the clean consumer release.
-- Real Collector conformance and release preparation remain Phase 3.
+Initial public Hex release candidate; no version has been published yet.
+
+- Supervised Logger handler with bounded buffering, structured OTLP bodies,
+  severity and metadata conversion, optional span correlation, UTF-8 truncation,
+  automatic registration recovery, and rate-limited diagnostics.
+- Telemetry.Metrics counters, sums, gauges, and explicit-bound delta histograms,
+  with converted units, transformed tags, filters, bounded ingress and series,
+  interval reset, and final shutdown snapshots. Summaries are rejected.
+- Shared Finch OTLP/HTTP transport with gzip, bounded deadlines and retries,
+  Retry-After handling, partial-response decoding, and export/drop telemetry.
+  Empty partial-success messages are treated as full success, matching real
+  Collector responses and the OTLP schema.
+- Namespaced protobuf generated from vendored OTLP v1.5.0 schemas. No full SDK,
+  gRPC stack, or runtime gpb requirement; tracing API is optional.
+- Opt-in Docker conformance against pinned OpenTelemetry Collector 0.160.0,
+  checking decoded logs and all four metric types. Default tests remain local.
+- Production consumer release checks with current and minimum dependency
+  resolution, including optional tracing absence/presence. gpb requires 4.21.7
+  or newer within 4.x because 4.21.0 fails to compile on OTP 29.
+
+Delivery is best effort and in memory. Crashes, overload, and exhausted retries
+lose data; retries can duplicate accepted data. Traces, durable queues, cumulative
+metrics, gRPC, and custom certificate/mTLS environment settings are out of scope.
+
+Elixir 1.19+ and OTP 28+ are the baseline. Breaking changes in the initial 0.x
+series will increment the minor version and include migration notes.

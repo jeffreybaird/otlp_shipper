@@ -148,3 +148,23 @@ No new dependency is introduced. Pool startup moved to the shared core so metric
 never import the Logger implementation. The consumer-release smoke exercises both
 signals with the tracing API and SDK absent. Real Collector conformance remains
 Phase 3; public Hex publication still requires authorization.
+
+## Phase 3 conformance and release preparation
+
+The opt-in Mix task uses official Collector 0.160.0, pinned by image digest, with
+its detailed debug exporter. It sends synthetic data through both public components
+in a separate VM after removing inherited OTEL configuration. Default CI remains
+Docker-free. The real Collector's empty partial-success response exposed a transport
+classification defect: empty means full success per the vendored schema; warning-only
+responses still report partial status without a drop count.
+
+Release consumer checks now cover minimum direct dependencies and optional API
+presence/absence. gpb 4.21.0 failed on OTP 29's reserved `else`; the supported minimum
+is 4.21.7. The optional API's 1.3.0 lower bound works for the no-active-span consumer
+but warns about `link/2` on OTP 29. README recommends API 1.5.0 there. CI additionally
+checks the minimum supported Elixir 1.19.0 / OTP 28.0 combination.
+
+Public Hex intent does not authorize publishing, reserving the name, or changing
+GitHub visibility. The name API returned 404 and the source remained private on
+September 12, 2026. Upstream experimental's latest release remained 0.5.1. Candidate
+checksums and final release prerequisites belong in `submission/`.

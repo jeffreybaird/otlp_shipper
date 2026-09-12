@@ -66,3 +66,10 @@ After publication, use a fresh consumer with a Hex dependency on that exact vers
 and verify fetch, compilation, and the smoke test. Check the public package page and
 versioned docs. Record the result. If there is a problem, stop further publication
 and determine a fix; do not assume an existing release can always be replaced.
+
+Run the minimum dependency modes documented in [../testing.md](../testing.md), and
+run `mix otlp_shipper.conformance` separately from the default gate. The conformance
+config and emitter under `priv/conformance/` are included in the archive; test debug
+fixtures, development scripts, CI configuration, and repository guidance are not.
+A source checkout is needed for `scripts/package_smoke.sh`; the packaged Mix task is
+available to developers with Mix and a local Docker engine.
