@@ -13,4 +13,11 @@
 - Bound charlist traversal, support struct reports, and deduplicate report keys.
 - Preserve the recorded recipe's log payload contract; exercise log delivery in a
   fresh consumer release without the optional tracing API or build-time gpb.
-- Metrics aggregation remains Phase 2; real Collector conformance remains Phase 3.
+- Phase 2: Telemetry.Metrics counters, sums, gauges, and explicit-bound delta
+  histograms with transformed tags, units, filtering, bounded ingress/series, and
+  supervised handler cleanup. Summaries are rejected in favor of distributions.
+- Keep histogram bounds distinct after double conversion and copy small tag
+  slices to prevent large backing-binary retention.
+- Share Finch pool recovery between independent log and metric pipelines; verify
+  both signals in the clean consumer release.
+- Real Collector conformance and release preparation remain Phase 3.

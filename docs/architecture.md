@@ -1,7 +1,7 @@
 # OTLP architecture
 
-This guide summarizes [../PLAN.md](../PLAN.md). The shared core and Logger adapter
-are implemented; the metrics contract remains planned.
+This guide summarizes [../PLAN.md](../PLAN.md). The shared core, Logger adapter,
+and metrics reporter are implemented through Phase 2.
 Confirmed: `otlp_shipper`, module root `OtlpShipper`, public Hex, Finch directly.
 
 ## One package, independent signals
@@ -10,7 +10,7 @@ The log handler and metrics reporter share the core and never depend on each oth
 Keep the log handler replaceable if upstream SDK support makes it unnecessary.
 The consumer chooses which components to start. Traces remain outside this package.
 
-| Planned component | Responsibility |
+| Component | Responsibility |
 | --- | --- |
 | Config | Explicit options over OTEL environment configuration; per-signal settings and endpoint rules |
 | Resource | Service identity and extra attributes; require `service.name` at startup |
@@ -81,3 +81,25 @@ detach. Buffer enqueue uses ETS directly; HTTP stays in the batch worker. Diagno
 are rate limited with shared atomics and an excluded Logger domain. HTTP implementation
 logs are filtered, and a process-local ingress guard prevents synchronous telemetry
 subscribers from recursively exporting their own log messages.
+
+## Metrics lifecycle and bounds
+
+MetricsReporter owns a rest-for-one tree: shared Pool startup, Buffer, a GenServer
+Worker, and telemetry Registration. Startup shares anonymous handles through a
+per-instance ETS table. Producers receive the worker's ingress handle at attach
+time; they never query that table or make GenServer calls during events.
+
+Atomic ingress credits bound pending samples. Worker state holds at most max_series
+active definition/tag combinations. Each completed series becomes one buffered point;
+export groups compatible points into metric messages. Snapshot clears interval state
+before HTTP, while sum nonmonotonicity history remains bounded by definition count.
+Timers carry incarnation tokens so an already-delivered old tick cannot create a
+second interval schedule after explicit flush. Registration detaches first on
+shutdown and replaces its own stable IDs after worker or registration failure.
+
+Metric definitions reject internal exporter events, duplicate names, unsupported
+units, and malformed buckets. Sampling handles keep/drop and measurement/tag
+callbacks safely, with no double unit conversion. Tags retain their meaning by
+rejecting excessive data instead of truncating; copied binary slices bound retained
+memory. Histogram bounds are validated after double conversion as well as before
+export. Numeric overflow is an observed drop, never wrapped arithmetic.

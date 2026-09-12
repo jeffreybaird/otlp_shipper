@@ -129,3 +129,21 @@ API references have targeted compile annotations so absent tracing does not prod
 undefined-module warnings. ExDoc, Dialyzer, formatting, warnings-as-errors compile,
 and Hex retirement audit run with the standard gate. Verify the final Phase 1 PR
 head's CI result separately; real Collector conformance remains Phase 3.
+
+## Phase 2 verification — September 12, 2026
+
+The suite now covers 82 tests and 19 doctests. New tests assert exact counts, sums,
+gauges, histogram buckets and boundaries, interval reset and idle behavior, tag
+transformation, unit conversion, unsupported definitions, series/ingress limits,
+concurrent producers, retry/failure isolation, final shutdown snapshot, independent
+instances, and worker/buffer/registration recovery. A 10,000-event burst with a
+10-sample ingress cap reports exactly 9990 dropped observations. Old timer tokens
+and exporter/callback feedback are exercised explicitly.
+
+Precision and memory regression tests demonstrate that histogram bounds cannot
+collapse to identical doubles and retained tag strings cannot keep huge source
+binaries alive. Prior phase tests remain intact. The package smoke also delivers
+an exact delta counter alongside logs with no tracing or gpb at runtime. Final
+format, compile, ExUnit, Dialyzer, ExDoc, retirement audit, and packaged-release
+results belong to the Phase 2 PR head; check CI's pinned toolchain separately from
+local Elixir 1.19.5 / OTP 29.0.1. Live Collector conformance remains Phase 3.
