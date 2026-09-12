@@ -32,13 +32,22 @@ defmodule OtlpShipper.Value do
     %{value: {type, value}}
   end
 
-  def encode(value) when is_list(value),
-    do: %{value: {:array_value, %{values: Enum.map(value, &encode/1)}}}
+  def encode(value) when is_list(value) do
+    if proper_list?(value),
+      do: %{value: {:array_value, %{values: Enum.map(value, &encode/1)}}},
+      else: inspect_value(value)
+  end
 
   def encode(value) when is_map(value),
     do: %{value: {:kvlist_value, %{values: attributes(value)}}}
 
-  def encode(value),
+  def encode(value), do: inspect_value(value)
+
+  defp proper_list?([]), do: true
+  defp proper_list?([_ | tail]), do: proper_list?(tail)
+  defp proper_list?(_), do: false
+
+  defp inspect_value(value),
     do: %{value: {:string_value, inspect(value, limit: 50, printable_limit: 4096)}}
 
   @doc """

@@ -97,7 +97,7 @@ upstream logs replacement before Phase 1 as required by PLAN.md.
 ## Phase 0 verification — September 12, 2026
 
 - Local Elixir 1.19.5 / OTP 29.0.1: formatting, warnings-as-errors compile,
-  36 ExUnit tests and 10 doctests, Dialyzer, and ExDoc passed.
+  37 ExUnit tests and 10 doctests, Dialyzer, and ExDoc passed.
 - `mix hex.audit`: no retired dependencies found; this is not a comprehensive
   vulnerability scan.
 - Clean consumer compile and release encoding passed with the optional tracing API

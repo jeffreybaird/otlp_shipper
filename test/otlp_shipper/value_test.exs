@@ -22,6 +22,10 @@ defmodule OtlpShipper.ValueTest do
     end
   end
 
+  test "falls back to inspection for an improper list" do
+    assert Value.encode([1 | :tail]) == %{value: {:string_value, "[1 | :tail]"}}
+  end
+
   test "normalizes keys deterministically with no duplicate OTLP attributes" do
     attrs = Value.attributes(%{:same => 1, "same" => 2, 3 => "number", <<255>> => "bytes"})
 
