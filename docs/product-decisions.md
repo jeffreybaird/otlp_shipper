@@ -120,3 +120,31 @@ Ignore inherited IDs in that case; a distinct event-level pair is still respecte
 Finch's killed supervisor can leave named descendants briefly alive. Restart retries
 for at most one second only after that tree successfully started once. Initial name
 collisions remain failures. This prevents a tight restart-intensity failure loop.
+
+## Phase 2 implementation record
+
+MetricsReporter implements counters, sums, last-value gauges, and distributions.
+Summaries return `{:error, :unsupported_metric, :use_distribution}`. Delta intervals
+reset on snapshot regardless of export success; empty intervals emit nothing. Gauge
+points use observation time and no start time. Sum monotonicity becomes false after
+an accepted negative value and stays false until restart. Histogram sum is omitted
+for negative observations, following the vendored schema's compatibility requirement.
+
+Default bounds are 1000 active series and 2048 pending observations per reporter,
+plus the shared point queue and batch limits. Series caps reset each interval; first
+admitted series keep their slots and overflow is counted. Tags are limited to 32
+scalar attributes / 4096 external bytes and never truncated. Duplicate names and
+unsupported units/reporter options fail startup. Histograms require explicit buckets;
+empty buckets mean one catch-all bucket and at most 256 finite bounds are accepted.
+
+The installed Telemetry.Metrics 1.2.0 source confirms that constructors wrap unit
+conversion into measurement functions; the reporter does not convert twice. Counters
+still require a non-nil measurement. Keep executes first, then measurement and tags.
+These contracts follow the [reporter guidance](https://hexdocs.pm/telemetry_metrics/writing_reporters.html).
+Delta interval and gauge distinctions follow the
+[OTel data model](https://opentelemetry.io/docs/specs/otel/metrics/data-model/).
+
+No new dependency is introduced. Pool startup moved to the shared core so metrics
+never import the Logger implementation. The consumer-release smoke exercises both
+signals with the tracing API and SDK absent. Real Collector conformance remains
+Phase 3; public Hex publication still requires authorization.

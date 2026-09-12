@@ -45,6 +45,19 @@ defmodule ReleaseLogCollector do
     hd(hd(hd(decoded.resource_logs).scope_logs).log_records)
   end
 
+  def receive_metrics(listener) do
+    {:ok, socket} = :gen_tcp.accept(listener, 5000)
+    {:ok, {:http_request, :POST, {:abs_path, "/v1/metrics"}, _}} = :gen_tcp.recv(socket, 0, 5000)
+    length = content_length(socket, nil)
+    :ok = :inet.setopts(socket, packet: :raw)
+    {:ok, body} = :gen_tcp.recv(socket, length, 5000)
+    decoded = :otlp_shipper_metrics_service.decode_msg(body,
+      :"opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceRequest")
+    :ok = :gen_tcp.send(socket, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+    :gen_tcp.close(socket)
+    hd(hd(hd(decoded.resource_metrics).scope_metrics).metrics)
+  end
+
   defp content_length(socket, length) do
     case :gen_tcp.recv(socket, 0, 5000) do
       {:ok, :http_eoh} -> length
@@ -64,9 +77,19 @@ collector = Task.async(fn -> ReleaseLogCollector.receive_record(listener) end)
 :logger.log(:notice, "release log without tracing")
 record = Task.await(collector, 5000)
 %{body: %{value: {:string_value, "release log without tracing"}}, trace_id: "", span_id: ""} = record
+collector = Task.async(fn -> ReleaseLogCollector.receive_metrics(listener) end)
+metric = Telemetry.Metrics.counter("release.events.count")
+{:ok, reporter} = OtlpShipper.MetricsReporter.start_link(metrics: [metric],
+  service_name: "release-smoke", endpoint: "http://127.0.0.1:#{port}/v1/metrics")
+:telemetry.execute([:release, :events], %{count: 1})
+:ok = OtlpShipper.MetricsReporter.flush(reporter)
+%{name: "release.events.count", data: {:sum, %{is_monotonic: true,
+  aggregation_temporality: :AGGREGATION_TEMPORALITY_DELTA,
+  data_points: [%{value: {:as_int, 1}}]}}} = Task.await(collector, 5000)
+Supervisor.stop(reporter)
 Supervisor.stop(supervisor)
 :gen_tcp.close(listener)
-IO.puts("Package release smoke passed: HTTP log delivery without gpb or optional tracing modules")
+IO.puts("Package release smoke passed: HTTP log and metric delivery without gpb or optional tracing modules")
 ELIXIR
 mix deps.get
 MIX_ENV=prod mix compile --warnings-as-errors

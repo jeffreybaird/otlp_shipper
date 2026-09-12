@@ -4,9 +4,106 @@ An Elixir package for bounded OTLP/HTTP log shipping and `Telemetry.Metrics`
 reporting. Finch provides HTTP connection pooling; the package owns buffering,
 retry deadlines, and drop reporting. No full OpenTelemetry SDK is required.
 
-**Status: Phase 1 logs and shared core implemented.** Metrics aggregation remains
-Phase 2; real Collector conformance and release preparation remain Phase 3. This repository has not been published to Hex. Public Hex and MIT
+**Status: logs, metrics, and the shared core are implemented through Phase 2.**
+Real Collector conformance and release preparation remain Phase 3. This repository has not been published to Hex. Public Hex and MIT
 are the intended distribution; the source repository is currently private.
+
+## Metrics setup
+
+Add a reporter to your application's supervision tree:
+
+```elixir
+import Telemetry.Metrics
+metrics = [
+  counter("checkout.request.count"),
+  distribution("checkout.request.duration",
+    unit: {:native, :millisecond}, reporter_options: [buckets: [5, 25, 100, 500]])
+]
+children = [{OtlpShipper.MetricsReporter, metrics: metrics, service_name: "checkout"}]
+Supervisor.start_link(children, strategy: :one_for_one)
+```
+
+This listens to `[:checkout, :request]` events with `:count` and/or `:duration`
+measurements. The default collector URL is `http://localhost:4318/v1/metrics`;
+set `endpoint`, `base_endpoint`, or the OTEL variables below for another collector.
+A reporter can run alongside the Logger handler or independently. Metrics definitions
+and configuration are validated before processes or telemetry handlers start.
+
+| Definition | OTLP result | Behavior |
+| --- | --- | --- |
+| `counter` | Monotonic delta Sum | One per accepted event; measurement must be non-nil |
+| `sum` | Delta Sum | Sum of measurements; becomes nonmonotonic after an accepted negative value and stays so until restart |
+| `last_value` | Gauge | Last observed value and observation timestamp in the interval |
+| `distribution` | Delta Histogram | Explicit inclusive upper bounds, plus implicit positive infinity |
+| `summary` | Startup error | `{:error, :unsupported_metric, :use_distribution}`; use `distribution` |
+
+Histogram `reporter_options[:buckets]` is required, in the converted output unit.
+An empty list gives a single catch-all bucket. Up to 256 finite, strictly increasing
+bounds are allowed; bounds must remain distinct as protobuf doubles. Histograms
+include count, bucket counts, min, and max. Sum is omitted for an interval containing
+negative observations, as required by the vendored OTLP schema.
+
+Metric names join Telemetry.Metrics name segments with dots. Duplicate output names
+are rejected, even for different types. Descriptions are preserved. Supported units
+are `:unit` → `1`, seconds → `s`, milliseconds → `ms`, microseconds → `us`, nanoseconds
+→ `ns`, bytes → `By`, kilobytes → `kBy`, megabytes → `MBy`, and percent → `%` (use
+singular atoms such as `:second` and `:byte`). Convert `:native` explicitly, for example
+`unit: {:native, :millisecond}`. Telemetry.Metrics wraps the measurement function with
+the conversion; this reporter executes it once. Unsupported units/options fail startup.
+
+Keep/drop predicates run before measurement and tag transformation. Measurement
+functions with one or two arguments, `tag_values`, and function-valued `tags` are
+supported. Missing measurements and filtered events are skipped. Invalid values or
+callback failures emit a drop count without detaching event handlers. Numeric values
+must fit signed 64-bit integers or finite doubles; arithmetic overflow drops the
+observation while preserving the previous aggregate. Counter values are ignored
+apart from the non-nil requirement.
+
+Selected tags become typed attributes and identify a series. Missing selected tags
+are omitted. Tag keys must be strings or atoms; values must be scalar strings, atoms,
+booleans, or valid numbers. Tags are never truncated: truncation could merge unrelated
+series. Values with invalid UTF-8, nested containers, more than 32 keys, or excessive
+size are rejected. Small binary slices are copied to avoid retaining large source data.
+
+| Reporter option | Default / meaning |
+| --- | --- |
+| `flush_ms` | 1,000 ms aggregation interval |
+| `max_series` | 1,000 active series across all definitions per interval |
+| `max_pending` | 2,048 pending observations across all definitions |
+| `max_tag_bytes` | 4,096 bytes, measured as the selected tag map's Erlang external size |
+| `finch_name` | `OtlpShipper.MetricsReporter.Finch`; use distinct atom constants for independent instances |
+| `name` | Optional supervisor name |
+
+The first series admitted in an interval retain their slots. At `max_series`, new
+series are dropped and counted; existing series continue updating. Every snapshot
+clears active series, including gauges. Empty intervals emit nothing. Sum monotonicity
+history is retained by definition, not by individual tag set. Avoid user IDs, request
+IDs, and other unbounded tag values even with these caps: they make exported metrics
+expensive and can starve useful series.
+
+The GenServer serializes aggregation in receipt order. Producers reserve a bounded
+ingress slot before sending a sample; a full ingress queue drops the new observation.
+No HTTP or synchronous server call runs in the telemetry producer. User measurement,
+filter, and tag functions still execute there and must stay fast.
+
+`OtlpShipper.MetricsReporter.flush(reporter)` closes the current interval and returns
+once its points are queued, not delivered. Events already emitted by that calling
+process are included; concurrent producers may enter either interval. Sums/histograms
+carry contiguous interval timestamps. Gauge timestamps are their observation times.
+An interval begins anew even if export later fails; failed data is never carried into
+a later delta. Retry can duplicate remotely accepted data.
+
+Completed points use the shared Buffer limits below: `max_queue` counts queued
+points, `max_batch` limits points per export, and overflow drops oldest queued points.
+Retention consists of bounded ingress, active series, queued points, and one in-flight
+batch. Shutdown detaches handlers, takes a final snapshot, and drains export with
+bounded waits. Crashes and restart gaps can lose observations or points. Registration,
+aggregation, and buffer restart together as needed; each instance detaches only its
+own handlers. Logs and metrics share pool startup code but do not depend on each other.
+
+Do not define metrics on `[:otlp_shipper, ...]` events; startup rejects them to avoid
+feedback. Exporter-owned HTTP work and synchronous callback feedback are excluded.
+Keep telemetry subscribers fast and avoid asynchronous self-reporting loops.
 
 ## Logger setup
 
@@ -81,8 +178,7 @@ No tracing or Logger process configuration is changed by this handler.
 
 ## When to use another exporter
 
-Trace export belongs to the OpenTelemetry SDK/exporter. Metrics definitions are not
-yet accepted by this package. Before adopting the logs handler, check whether
+Trace export belongs to the OpenTelemetry SDK/exporter. Unsupported metric types and units are rejected at startup. Before adopting the logs handler, check whether
 [`opentelemetry_experimental`](https://hex.pm/packages/opentelemetry_experimental)
 has released working OTLP log support; replacing this temporary gap is preferable
 to maintaining two log exporters. The Phase 1 recheck still found release 0.5.1.
@@ -97,7 +193,7 @@ Do not use this package when durable or exactly-once log delivery is required.
 - `OtlpShipper.Buffer`: fixed-capacity ingress and one supervised batch worker.
 
 The core accepts OTLP message maps. `OtlpShipper.LogHandler` converts Logger events;
-metric aggregation remains pending. Both signals use the core independently.
+`OtlpShipper.MetricsReporter` aggregates metric definitions. Both signals use the core independently.
 Trace export is outside this package's scope.
 
 ## Core example
@@ -187,7 +283,10 @@ can cause duplicate delivery. An HTTP 200 with partial rejection is reported as
 | `[:otlp_shipper, :dropped]` | `count` | `signal`, `reason` |
 
 Drop reasons include `:queue_full`, `:export_failed`, `:item_too_large`, and
-`:shutdown`, `:invalid_log_event`, and `:unavailable`. `count` on export is the attempted record/data-point count supplied to
+`:shutdown`, `:invalid_log_event`, and `:unavailable`. Metrics also report
+`:series_limit`, `:invalid_measurement`, `:invalid_tags`, `:invalid_keep_result`,
+`:callback_failed`, and `:numeric_overflow`. Metrics ingress/aggregation drops count
+observations; queued/exported drops count data points. `count` on export is the attempted record/data-point count supplied to
 transport. One stop event is emitted per logical export, not per HTTP retry. Callback
 crashes/timeouts are reported by the buffer as drops. Custom export callbacks own
 their ordinary failure diagnostics; `Transport.export/4` handles these for HTTP.
