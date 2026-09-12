@@ -273,6 +273,17 @@ defmodule OtlpShipper.LogHandlerTest do
     refute_receive {:export, _, _, _, _, _}, 30
   end
 
+  test "invalid supervisor names return a tagged startup error", %{options: opts} do
+    assert {:error, :invalid_log_options} = LogHandler.start_link(Keyword.put(opts, :name, 123))
+  end
+
+  test "malformed domain metadata cannot uninstall the Logger handler", %{options: opts} do
+    start_supervised!({LogHandler, opts})
+    Logger.info("odd domain", domain: [:application | :invalid_tail])
+    assert accept_record().body.value == {:string_value, "odd domain"}
+    assert {:ok, _} = :logger.get_handler_config(:otlp_shipper)
+  end
+
   def count_drops(_, %{count: count}, %{reason: :queue_full}, counter),
     do: :atomics.add(counter, 1, count)
 

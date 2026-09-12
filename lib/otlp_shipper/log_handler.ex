@@ -35,6 +35,10 @@ defmodule OtlpShipper.LogHandler do
   """
   use Supervisor
   @behaviour :logger_handler
+  # These two calls are guarded at runtime and covered both with and without the
+  # optional API. Consumers without tracing must also compile without warnings.
+  @compile {:no_warn_undefined,
+            [{:otel_tracer, :current_span_ctx, 0}, {:otel_span, :hex_span_ctx, 1}]}
   alias OtlpShipper.{Buffer, Config, Encoder, LogRecord, Transport}
   alias OtlpShipper.LogHandler.Registration
 
@@ -179,10 +183,15 @@ defmodule OtlpShipper.LogHandler do
 
     interval = settings[:diagnostic_interval_ms]
 
-    if valid and level and is_integer(interval) and interval > 0,
+    if valid and valid_name?(settings[:name]) and level and is_integer(interval) and interval > 0,
       do: :ok,
       else: {:error, :invalid_log_options}
   end
+
+  defp valid_name?(name) when is_atom(name), do: true
+  defp valid_name?({:global, _}), do: true
+  defp valid_name?({:via, module, _}) when is_atom(module), do: true
+  defp valid_name?(_), do: false
 
   defp resolve_context(event) do
     if Code.ensure_loaded?(:otel_tracer) and Code.ensure_loaded?(:otel_span) do
@@ -214,12 +223,16 @@ defmodule OtlpShipper.LogHandler do
 
   defp reject_stale_process_ids(event, _), do: event
 
-  defp excluded?(%{meta: meta}) do
+  defp excluded?(%{meta: meta}) when is_map(meta) do
     domain = Map.get(meta, :domain, [])
-    (is_list(domain) and :otlp_shipper in domain) or internal_module?(Map.get(meta, :mfa))
+    internal_domain?(domain) or internal_module?(Map.get(meta, :mfa))
   end
 
   defp excluded?(_), do: false
+
+  defp internal_domain?([:otlp_shipper | _]), do: true
+  defp internal_domain?([_ | tail]), do: internal_domain?(tail)
+  defp internal_domain?(_), do: false
 
   defp internal_module?({module, _, _}) when is_atom(module) do
     name = Atom.to_string(module)
