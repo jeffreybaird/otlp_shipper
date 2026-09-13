@@ -132,6 +132,49 @@ defmodule OtlpShipper.TransportTest do
     send(collector, {:respond, 200, [], ""})
   end
 
+  test "empty partial-success messages are full success for both signals", context do
+    for {signal, module, request_type, response_type, rejected_key} <- [
+          {:logs, :otlp_shipper_logs_service,
+           :"opentelemetry.proto.collector.logs.v1.ExportLogsServiceRequest",
+           :"opentelemetry.proto.collector.logs.v1.ExportLogsServiceResponse",
+           :rejected_log_records},
+          {:metrics, :otlp_shipper_metrics_service,
+           :"opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceRequest",
+           :"opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceResponse",
+           :rejected_data_points}
+        ],
+        partial <- [%{}, %{rejected_key => 0, :error_message => ""}] do
+      config = %{context.config | signal: signal, endpoint: context.endpoint <> "/v1/#{signal}"}
+      body = module.encode_msg(%{}, request_type)
+      response = module.encode_msg(%{partial_success: partial}, response_type)
+      task = Task.async(fn -> Transport.export(config, context.finch, body, 1) end)
+      assert_receive {:export, collector, _, _, _, _}
+      send(collector, {:respond, 200, [], response})
+      assert :ok = Task.await(task)
+    end
+  end
+
+  test "warning-only responses remain partial and negative rejection counts are invalid",
+       context do
+    for {partial, expected} <- [
+          {%{error_message: "synthetic warning"}, {:ok, :partial, 0}},
+          {%{rejected_log_records: -1}, {:error, :invalid_response}}
+        ] do
+      response =
+        :otlp_shipper_logs_service.encode_msg(
+          %{partial_success: partial},
+          :"opentelemetry.proto.collector.logs.v1.ExportLogsServiceResponse"
+        )
+
+      task =
+        Task.async(fn -> Transport.export(context.config, context.finch, context.body, 1) end)
+
+      assert_receive {:export, collector, "logs", _, _, _}
+      send(collector, {:respond, 200, [], response})
+      assert ^expected = Task.await(task)
+    end
+  end
+
   test "partial acceptance is reported without retrying", %{
     config: config,
     finch: finch,

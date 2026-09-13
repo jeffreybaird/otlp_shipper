@@ -4,9 +4,8 @@ An Elixir package for bounded OTLP/HTTP log shipping and `Telemetry.Metrics`
 reporting. Finch provides HTTP connection pooling; the package owns buffering,
 retry deadlines, and drop reporting. No full OpenTelemetry SDK is required.
 
-**Status: logs, metrics, and the shared core are implemented through Phase 2.**
-Real Collector conformance and release preparation remain Phase 3. This repository has not been published to Hex. Public Hex and MIT
-are the intended distribution; the source repository is currently private.
+**0.1.0 release candidate:** logs, metrics, and real Collector conformance are
+implemented. Not yet published to Hex. The source repository is currently private.
 
 ## Metrics setup
 
@@ -28,6 +27,44 @@ measurements. The default collector URL is `http://localhost:4318/v1/metrics`;
 set `endpoint`, `base_endpoint`, or the OTEL variables below for another collector.
 A reporter can run alongside the Logger handler or independently. Metrics definitions
 and configuration are validated before processes or telemetry handlers start.
+
+## Logger setup
+
+Add the handler to your application's supervision tree:
+
+```elixir
+children = [
+  {OtlpShipper.LogHandler,
+   service_name: "checkout",
+   endpoint: "http://localhost:4318/v1/logs"}
+]
+
+Supervisor.start_link(children, strategy: :one_for_one)
+# Ordinary Logger calls now enter the bounded export queue.
+require Logger
+Logger.info("checkout complete", order_id: "example-42")
+```
+
+## Installation and compatibility
+
+For local evaluation, add `{:otlp_shipper, path: "/path/to/otlp_shipper"}` to
+`mix.exs` dependencies. After the public release, use `{:otlp_shipper, "~> 0.1.0"}`.
+Run `mix deps.get`. The snippets above show standalone trees; in an application,
+add each child to your existing supervisor instead of starting an extra root.
+
+Elixir 1.19+ and OTP 28+ are the supported baseline. CI checks Elixir 1.19.0 / OTP
+28.0 and the pinned Elixir 1.19.5 / OTP 28.5.0.2 pair; local release checks also use
+Elixir 1.19.5 / OTP 29.0.1. The declared Elixir requirement permits future 1.x
+versions, but those are not pre-certified.
+
+Dependency lower bounds are Finch 0.20.0, telemetry 1.3.0, telemetry_metrics 1.1.0,
+gpb 4.21.7, and optional opentelemetry_api 1.3.0. Fresh production consumers exercise
+these bounds with and without tracing. gpb 4.21.0 cannot compile on OTP 29 and is
+excluded. Optional API 1.3.0 works in the no-active-span smoke but emits an upstream
+`link/2` warning on OTP 29; prefer API 1.5.0 there. SDK span integration is tested
+with API 1.5.0 / SDK 1.7.0. gpb is a build dependency, absent at release runtime.
+
+## Metric behavior
 
 | Definition | OTLP result | Behavior |
 | --- | --- | --- |
@@ -105,22 +142,7 @@ Do not define metrics on `[:otlp_shipper, ...]` events; startup rejects them to 
 feedback. Exporter-owned HTTP work and synchronous callback feedback are excluded.
 Keep telemetry subscribers fast and avoid asynchronous self-reporting loops.
 
-## Logger setup
-
-Add the handler to your application's supervision tree:
-
-```elixir
-children = [
-  {OtlpShipper.LogHandler,
-   service_name: "checkout",
-   endpoint: "http://localhost:4318/v1/logs"}
-]
-
-Supervisor.start_link(children, strategy: :one_for_one)
-# Ordinary Logger calls now enter the bounded export queue.
-require Logger
-Logger.info("checkout complete", order_id: "example-42")
-```
+## Logger lifecycle
 
 The handler owns its Finch pool, buffer, and Logger registration. Configure headers,
 compression, resources, and limits through the same child options listed below.
@@ -181,7 +203,9 @@ No tracing or Logger process configuration is changed by this handler.
 Trace export belongs to the OpenTelemetry SDK/exporter. Unsupported metric types and units are rejected at startup. Before adopting the logs handler, check whether
 [`opentelemetry_experimental`](https://hex.pm/packages/opentelemetry_experimental)
 has released working OTLP log support; replacing this temporary gap is preferable
-to maintaining two log exporters. The Phase 1 recheck still found release 0.5.1.
+to maintaining two log exporters. The September 12, 2026 release-preparation recheck still found 0.5.1, the
+release assessed during Phase 1. Recheck before adopting or publishing; this
+package does not claim that every newer upstream development snapshot is broken.
 Do not use this package when durable or exactly-once log delivery is required.
 
 ## Shared core
@@ -314,7 +338,23 @@ scripts/package_smoke.sh
 ```
 
 Tests use a loopback Bandit collector and generated decoders, with no external
-collector or production credentials. Real OTel Collector conformance is Phase 3.
+collector or production credentials. Run real Collector conformance separately with
+a local Docker engine (not a remote Docker context):
+
+```sh
+docker pull otel/opentelemetry-collector@sha256:e495787f07dbe432ce763ebaf5bc3d113850e9eee2250ade7a3da6a882d0d69a
+mix otlp_shipper.conformance
+```
+
+This pins official Collector **0.160.0**. The task uses an ephemeral loopback port,
+a read-only configuration mount, and synthetic gzip logs and metrics from a separate
+VM with inherited `OTEL_*` variables removed. It checks the detailed debug exporter's
+log body, severity, attributes, metric types, delta temporality, values, and histogram
+buckets. No credentials or backend account are needed. Docker commands have 30-second
+deadlines; readiness/output checks allow 60 polls. Its own container is removed on
+success or failure. If the VM is killed, remove the printed container name manually.
+A missing image, stopped engine, or blocked bind mount causes the task to fail;
+check Docker and the pull command first. Default tests and CI do not invoke Docker.
 CI uses `.tool-versions`; local verification must report any different toolchain.
 
 OTLP schema sources are vendored from `opentelemetry-proto` v1.5.0 with their
@@ -323,5 +363,6 @@ at build time and is not a runtime application. Collector response decoding is
 included to detect partial rejection; production does not ingest encoded telemetry.
 
 Repository development and release guidance lives under `docs/`.
-Building a package does not publish it. First release remains blocked on the
-remaining phases and release verification.
+Building a package does not publish it. Publication still needs owner authorization, a confirmed Hex publishing account,
+and publicly accessible source/support links. See `docs/submission/readiness.md`
+in the repository for candidate evidence.

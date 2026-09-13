@@ -37,7 +37,7 @@ defmodule OtlpShipper.MixProject do
       {:telemetry, "~> 1.3"},
       {:telemetry_metrics, "~> 1.1"},
       {:opentelemetry_api, "~> 1.3", optional: true},
-      {:gpb, "~> 4.21", runtime: false},
+      {:gpb, "~> 4.21 and >= 4.21.7", runtime: false},
       {:bandit, "~> 1.8", only: :test},
       {:opentelemetry, "~> 1.7", only: :test},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},

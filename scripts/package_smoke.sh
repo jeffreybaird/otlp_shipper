@@ -16,7 +16,17 @@ defmodule Consumer.MixProject do
   use Mix.Project
   def project do
     [app: :consumer, version: "0.1.0", elixir: "~> 1.19",
-     deps: [{:otlp_shipper, path: System.fetch_env!("OTLP_SMOKE_PACKAGE")}]]
+     deps: [{:otlp_shipper, path: System.fetch_env!("OTLP_SMOKE_PACKAGE")}] ++ compatibility_deps()]
+  end
+  defp compatibility_deps do
+    minimum = [{:finch, "== 0.20.0"}, {:telemetry, "== 1.3.0"},
+      {:telemetry_metrics, "== 1.1.0"}, {:gpb, "== 4.21.7", runtime: false}]
+    case System.get_env("OTLP_SMOKE_DEPENDENCY_SET") do
+      nil -> []
+      "minimum" -> minimum
+      "minimum_with_tracing" -> [{:opentelemetry_api, "== 1.3.0"} | minimum]
+      _ -> raise "Unknown smoke dependency set"
+    end
   end
   def application, do: [extra_applications: [:logger]]
 end
@@ -28,7 +38,8 @@ cat > smoke.exs <<'ELIXIR'
   [%{body: OtlpShipper.Value.encode("release works")}], config.resource)
 true = byte_size(body) > 0
 :non_existing = :code.which(:gpb_compile)
-:non_existing = :code.which(:otel_tracer)
+tracing? = System.get_env("OTLP_SMOKE_DEPENDENCY_SET") == "minimum_with_tracing"
+^tracing? = Code.ensure_loaded?(:otel_tracer)
 {:ok, apps} = :application.get_key(:otlp_shipper, :applications)
 false = :gpb in apps
 defmodule ReleaseLogCollector do
@@ -74,9 +85,9 @@ end
 collector = Task.async(fn -> ReleaseLogCollector.receive_record(listener) end)
 {:ok, supervisor} = OtlpShipper.LogHandler.start_link(service_name: "release-smoke",
   endpoint: "http://127.0.0.1:#{port}/v1/logs", max_batch: 1)
-:logger.log(:notice, "release log without tracing")
+:logger.log(:notice, "release log from consumer")
 record = Task.await(collector, 5000)
-%{body: %{value: {:string_value, "release log without tracing"}}, trace_id: "", span_id: ""} = record
+%{body: %{value: {:string_value, "release log from consumer"}}, trace_id: "", span_id: ""} = record
 collector = Task.async(fn -> ReleaseLogCollector.receive_metrics(listener) end)
 metric = Telemetry.Metrics.counter("release.events.count")
 {:ok, reporter} = OtlpShipper.MetricsReporter.start_link(metrics: [metric],
@@ -89,7 +100,7 @@ metric = Telemetry.Metrics.counter("release.events.count")
 Supervisor.stop(reporter)
 Supervisor.stop(supervisor)
 :gen_tcp.close(listener)
-IO.puts("Package release smoke passed: HTTP log and metric delivery without gpb or optional tracing modules")
+IO.puts("Package release smoke passed: HTTP logs and metrics without runtime gpb (tracing API presence checked)")
 ELIXIR
 mix deps.get
 MIX_ENV=prod mix compile --warnings-as-errors
