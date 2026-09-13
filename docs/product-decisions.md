@@ -2,6 +2,8 @@
 
 [../PLAN.md](../PLAN.md) is the intended design, not evidence of implemented features.
 The user has authorized development, atomic commits, and a push after each commit.
+Version 0.1.0 is published; dated scaffold and phase sections preserve earlier
+observations, with current release verification linked at the end.
 
 ## Planned scope
 
@@ -16,8 +18,8 @@ The user has authorized development, atomic commits, and a push after each commi
   and observable export/drop outcomes. Export must not take down the host application.
 - Delta metrics: counters, sums, gauges, explicit-bound histograms; reject summaries
   at initialization. Apply tag and unit transformations before aggregation.
-- Target first release: `0.1.0`, MIT, ExDoc, compatibility CI, audit and Dialyzer.
-  MIT is the plan's selected license; its text/metadata have not yet been added.
+- First release: `0.1.0`, MIT, ExDoc, compatibility CI, audit and Dialyzer.
+  MIT license text and matching package metadata are included.
 
 See [architecture.md](architecture.md) and PLAN.md for detailed acceptance contracts.
 
@@ -42,13 +44,15 @@ These decisions supersede the corresponding open questions in PLAN.md:
 - Module root: preserve the scaffold spelling `OtlpShipper`.
 
 PLAN.md's `OTLPShipper` names are implemented under `OtlpShipper`.
-Hex name availability/ownership and public source/support URLs still need verification.
+Hex lists `jeffreybaird` as owner and publisher of 0.1.0 as of September 13, 2026.
+HexDocs is public; GitHub source/support links remain private.
 
 ## Implementation decisions
 
 Finch supplies pooled HTTP; the package owns retry scheduling and export policy.
-The GitHub repository is currently private. Public Hex is authorized as the intended
-distribution, not a request to change GitHub visibility or publish a release now.
+The GitHub repository is currently private. The owner published 0.1.0 to public
+Hex on September 13, 2026. This does not change GitHub visibility or authorize
+further release uploads.
 
 Also define concrete limits, retry budgets, shutdown deadlines, and supported version
 combinations before implementing their behavior. Record choices and compatibility
@@ -168,3 +172,10 @@ Public Hex intent does not authorize publishing, reserving the name, or changing
 GitHub visibility. The name API returned 404 and the source remained private on
 September 12, 2026. Upstream experimental's latest release remained 0.5.1. Candidate
 checksums and final release prerequisites belong in `submission/`.
+
+## Publication — September 13, 2026
+
+The owner published 0.1.0 after Phase 3 merged. Hex metadata and the downloaded
+archive match the reviewed candidate checksum, and versioned HexDocs returns HTTP
+200. See [release verification](submission/release-0.1.0.md). Earlier phase notes
+above describe the state at that phase, including prerequisites since resolved.

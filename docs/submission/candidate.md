@@ -1,5 +1,10 @@
 # 0.1.0 candidate evidence
 
+**Historical preparation record.** Version 0.1.0 was subsequently published on
+September 13, 2026 with this exact archive checksum. See
+[publication verification](release-0.1.0.md) for current status. The observations
+below retain their pre-publication dates and scope.
+
 Preparation date: September 12, 2026. This is local release preparation, not a
 published version. Publication prerequisites are in [readiness.md](readiness.md).
 

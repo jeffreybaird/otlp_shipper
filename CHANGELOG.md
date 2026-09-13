@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased — 0.1.0 candidate
+## Unreleased
 
-Initial public Hex release candidate; no version has been published yet.
+## 0.1.0 — 2026-09-13
+
+Initial public Hex release.
 
 - Supervised Logger handler with bounded buffering, structured OTLP bodies,
   severity and metadata conversion, optional span correlation, UTF-8 truncation,

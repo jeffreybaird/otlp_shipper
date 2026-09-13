@@ -3,8 +3,8 @@
 These documents adapt Page Monitor's repository workflow for an Elixir Hex library
 and carry over the applicable style from Marquee's `CLAUDE.md` and `.claude/` files.
 The source repositories remain unchanged. [../PLAN.md](../PLAN.md) supplies the
-package design; Phase 2 metrics development is authorized. Phase 3 remains next
-after this phase is merged.
+package design. Phases 0–3 are complete; version 0.1.0 was published to public
+Hex on September 13, 2026.
 
 | Document | Use |
 | --- | --- |
@@ -15,6 +15,7 @@ after this phase is merged.
 | [Testing](testing.md) | ExUnit, adapters, processes, consumer checks |
 | [Agent coordination](codex-agents.md) | Bounded assignments and review handoffs |
 | [Data handling](data-handling.md) | Configuration, credentials, diagnostics |
+| [0.1.0 release](submission/release-0.1.0.md) | Published artifact and consumer verification |
 | [Release readiness](submission/readiness.md) | Prerequisites and evidence |
 | [Build](submission/build.md) | Local Hex package inspection and publication |
 | [Package listing](submission/package-listing.md) | Metadata and README requirements |
