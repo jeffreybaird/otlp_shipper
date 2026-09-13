@@ -1,8 +1,15 @@
 # Changelog
 
-## Unreleased — 0.1.0 candidate
+## 0.1.1
 
-Initial public Hex release candidate; no version has been published yet.
+- Widen the Finch requirement from `~> 0.20.0` to `~> 0.20` (`>= 0.20.0` and
+  `< 1.0.0`). The previous constraint capped Finch below 0.21.0, conflicting
+  with consumers already on 0.21.x; `~> 0.20` matches the documented lower
+  bound and the no-behaviour-change intent.
+
+## 0.1.0
+
+Initial public Hex release.
 
 - Supervised Logger handler with bounded buffering, structured OTLP bodies,
   severity and metadata conversion, optional span correlation, UTF-8 truncation,

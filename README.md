@@ -4,8 +4,8 @@ An Elixir package for bounded OTLP/HTTP log shipping and `Telemetry.Metrics`
 reporting. Finch provides HTTP connection pooling; the package owns buffering,
 retry deadlines, and drop reporting. No full OpenTelemetry SDK is required.
 
-**0.1.0 release candidate:** logs, metrics, and real Collector conformance are
-implemented. Not yet published to Hex. The source repository is currently private.
+**Published:** logs, metrics, and real Collector conformance are implemented and
+released on [Hex](https://hex.pm/packages/otlp_shipper).
 
 ## Metrics setup
 
