@@ -23,7 +23,7 @@ changes explicitly. Deprecate with migration guidance when practical; record
 intentional breaking changes in release notes.
 
 The bootstrap greeting functions were replaced during Phase 0. The real package
-root is `OtlpShipper`; core APIs are pre-release.
+root is `OtlpShipper`; the APIs shipped in public Hex version 0.1.0.
 
 Use semantic versions: breaking changes in the initial `0.x` series increment the
 minor version; document the migration even before `1.0`. See the official

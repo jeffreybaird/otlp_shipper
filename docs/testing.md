@@ -184,4 +184,12 @@ locked API 1.5.0 / SDK 1.7.0 pair, not the minimum optional API.
 The added minimum CI job tests Elixir 1.19.0 / OTP 28.0 and both lower-bound consumer
 modes. Default CI retains `.tool-versions`. Local checks use Elixir 1.19.5 / OTP
 29.0.1. See [submission/candidate.md](submission/candidate.md) for source revision,
-archive checksum, exact results, and remaining publication prerequisites.
+archive checksum and pre-publication results. See
+[release verification](submission/release-0.1.0.md) for the subsequent public
+Hex installation check.
+
+## Published 0.1.1 verification — September 15, 2026
+
+See [0.1.1 release verification](submission/release-0.1.1.md) for public Hex
+installation, the widened Finch requirement, and compatibility smoke results.
+Earlier phase and 0.1.0 records retain their original versions and dates.
