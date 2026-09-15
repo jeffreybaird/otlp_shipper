@@ -4,8 +4,9 @@ An Elixir package for bounded OTLP/HTTP log shipping and `Telemetry.Metrics`
 reporting. Finch provides HTTP connection pooling; the package owns buffering,
 retry deadlines, and drop reporting. No full OpenTelemetry SDK is required.
 
-**Published:** logs, metrics, and real Collector conformance are implemented and
-released on [Hex](https://hex.pm/packages/otlp_shipper).
+**[0.1.1 is available on Hex](https://hex.pm/packages/otlp_shipper/0.1.1).**
+[API documentation](https://hexdocs.pm/otlp_shipper/0.1.1/) is public. The GitHub
+source repository is currently private.
 
 ## Metrics setup
 
@@ -47,8 +48,12 @@ Logger.info("checkout complete", order_id: "example-42")
 
 ## Installation and compatibility
 
-For local evaluation, add `{:otlp_shipper, path: "/path/to/otlp_shipper"}` to
-`mix.exs` dependencies. After the public release, use `{:otlp_shipper, "~> 0.1.0"}`.
+Add the package to your `mix.exs` dependencies:
+
+```elixir
+{:otlp_shipper, "~> 0.1.1"}
+```
+
 Run `mix deps.get`. The snippets above show standalone trees; in an application,
 add each child to your existing supervisor instead of starting an extra root.
 
@@ -56,6 +61,9 @@ Elixir 1.19+ and OTP 28+ are the supported baseline. CI checks Elixir 1.19.0 / O
 28.0 and the pinned Elixir 1.19.5 / OTP 28.5.0.2 pair; local release checks also use
 Elixir 1.19.5 / OTP 29.0.1. The declared Elixir requirement permits future 1.x
 versions, but those are not pre-certified.
+
+Version 0.1.1 widens Finch from `~> 0.20.0` to `~> 0.20`, allowing versions
+`>= 0.20.0` and `< 1.0.0`, including 0.21.x. No runtime behavior changed.
 
 Dependency lower bounds are Finch 0.20.0, telemetry 1.3.0, telemetry_metrics 1.1.0,
 gpb 4.21.7, and optional opentelemetry_api 1.3.0. Fresh production consumers exercise
@@ -363,6 +371,7 @@ at build time and is not a runtime application. Collector response decoding is
 included to detect partial rejection; production does not ingest encoded telemetry.
 
 Repository development and release guidance lives under `docs/`.
-Building a package does not publish it. Publication still needs owner authorization, a confirmed Hex publishing account,
-and publicly accessible source/support links. See `docs/submission/readiness.md`
-in the repository for candidate evidence.
+Version 0.1.1 was published on September 13, 2026. See
+`docs/submission/release-0.1.1.md` for published-artifact verification and
+`docs/submission/readiness.md` for future release guidance. Building a package
+does not publish it; further uploads require release authorization.

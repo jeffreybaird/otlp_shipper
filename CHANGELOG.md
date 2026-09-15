@@ -1,13 +1,15 @@
 # Changelog
 
-## 0.1.1
+## Unreleased
+
+## 0.1.1 — 2026-09-13
 
 - Widen the Finch requirement from `~> 0.20.0` to `~> 0.20` (`>= 0.20.0` and
   `< 1.0.0`). The previous constraint capped Finch below 0.21.0, conflicting
   with consumers already on 0.21.x; `~> 0.20` matches the documented lower
   bound and the no-behaviour-change intent.
 
-## 0.1.0
+## 0.1.0 — 2026-09-13
 
 Initial public Hex release.
 

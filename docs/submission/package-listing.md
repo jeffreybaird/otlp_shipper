@@ -7,11 +7,11 @@ Keep `mix.exs`, README, public module docs, and release notes consistent:
 
 | Field | Current state / required work |
 | --- | --- |
-| Application / intended package | `:otlp_shipper` / `otlp_shipper` confirmed for public Hex; ownership unverified |
-| Version | `0.1.0` candidate; not published |
+| Application / intended package | `:otlp_shipper` / `otlp_shipper` on public Hex; publisher/owner `jeffreybaird` |
+| Version | `0.1.1`, published September 13, 2026 |
 | Description | Metadata and README describe implemented logs and metrics |
 | License | MIT text and matching metadata added |
-| Links | GitHub source URL configured; repo currently private; public docs/support pending |
+| Links | Public Hex and versioned HexDocs available; GitHub source/support links remain private |
 | Elixir / OTP support | Elixir 1.19+ / OTP 28+ baseline; minimum and pinned CI plus local OTP 29 checks |
 | Dependencies | Finch and telemetry required; gpb build-time; tracing API optional |
 
@@ -20,6 +20,6 @@ supervision if needed, errors, limitations, and upgrade notes. If the package ex
 telemetry, state supported signals/transports and delivery guarantees precisely.
 Document units and defaults. Keep examples free of credentials and invented APIs.
 
-Do not present private repository links as publicly accessible source, or construct
-HexDocs URLs as though publication has already occurred. Package metadata conventions
+Do not present private repository links as publicly accessible source, and verify versioned
+HexDocs links against each published release. Package metadata conventions
 are described in the [Hex publishing guide](https://hex.pm/docs/publish).
