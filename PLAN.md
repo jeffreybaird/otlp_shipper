@@ -1,6 +1,7 @@
 # PLAN.md — an OTLP logs + metrics shipper for Elixir
 
-A build plan for an agent working alone. Read it end to end before starting; the
+A package build plan. The five-role workflow in AGENTS.md and
+[docs/codex-agents.md](docs/codex-agents.md) governs agent coordination. Read it end to end before starting; the
 packaging decision in §2 and the dependency decision in §4 shape everything after.
 
 Original design notation (superseded by confirmed decisions below): **`otlp_shipper`**, module root **`OTLPShipper`**.

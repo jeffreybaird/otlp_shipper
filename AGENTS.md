@@ -33,11 +33,28 @@ and fake collector, Phase 1 logs, Phase 2 metrics, Phase 3 conformance/docs/rele
 Each phase gets a branch and PR; wait for its merge before beginning the next. Make routine implementation choices
 autonomously; ask when an unresolved choice changes the public contract.
 
-Build a working scaffold and test harness before splitting implementation. Use
-[docs/codex-agents.md](docs/codex-agents.md) when delegation is requested or otherwise
-authorized. No project-specific agent definitions are installed by these docs.
-Keep `mix.exs`, dependency changes, and shared public types under one owner at a
-time. Integrate the combined result before final checks.
+Use the five-role harness in [docs/codex-agents.md](docs/codex-agents.md) for feature
+and bug-fix work. This authorizes delegation with narrow assignments: orchestrator,
+spec writer, cheaper test runner, implementer, and independent reviewer. Installed
+roles live in `.codex/agents/`. The primary agent is the orchestrator; do not create
+a second coordinator. Schedule roles in stages when concurrency is limited.
+
+The spec writer first writes Cucumber/Gherkin feature specifications and failing
+unit/integration tests. The runner establishes red, the implementer makes them
+green, and the reviewer checks the result against this file and applicable `docs/`.
+Route missing behavior to the spec writer and implementation findings to the
+implementer. Repeat verification, PR updates, and independent review until all
+findings are resolved. Only the orchestrator owns commits, pushes, and the PR.
+Keep `mix.exs`, dependency changes, and shared public types under one owner.
+
+**Human approval is mandatory before any edit to an existing test, or any change
+that disables or weakens a lint/style rule.** This includes formatting, deletion,
+renaming, fixtures, helpers, doctests, skips, exclusions, and edits to tests created
+earlier in the same task. General development/commit authorization is not approval
+for these changes. Present the exact proposed patch and reason; never bypass hooks
+or treat another agent's approval as human approval. New test files are allowed.
+See [guardrail setup and limits](docs/agent-guardrails.md) for hook activation and
+the human-applied patch procedure. Guardrail configuration itself is protected.
 
 ## Architecture and Elixir style
 
@@ -93,7 +110,7 @@ and boundary cases. For reproducible bugs, first demonstrate the expected behavi
 with a failing regression test, then fix the root cause.
 
 Do not weaken assertions, delete tests, skip checks, or change expectations to hide
-regressions. Update tests for an intentional contract change and explain it. If an
+regressions. Request human approval for the exact test patch for an intentional contract change and explain it. If an
 existing specification appears wrong and the task does not resolve it, flag that
 ambiguity before changing its meaning.
 

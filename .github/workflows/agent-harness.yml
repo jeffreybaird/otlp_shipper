@@ -1,0 +1,37 @@
+name: agent-harness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Verify guardrail behavior
+        run: |
+          python3 scripts/test_agent_guard.py
+          python3 scripts/test_agent_guard_workflow.py
+          python3 scripts/test_agent_guard_paths.py
+          python3 scripts/test_agent_guard_orchestration.py
+          python3 scripts/test_agent_guard_optional_checks.py
+      - name: Parse Codex configuration
+        run: |
+          python3 - <<'PY'
+          import json
+          import tomllib
+          from pathlib import Path
+
+          for path in Path('.codex').rglob('*.toml'):
+              tomllib.loads(path.read_text())
+          json.loads(Path('.codex/hooks.json').read_text())
+          PY

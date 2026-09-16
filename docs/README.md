@@ -2,9 +2,10 @@
 
 These documents adapt Page Monitor's repository workflow for an Elixir Hex library
 and carry over the applicable style from Marquee's `CLAUDE.md` and `.claude/` files.
-The source repositories remain unchanged. [../PLAN.md](../PLAN.md) supplies the
-package design. Phases 0–3 are complete; version 0.1.1 was published to public
-Hex on September 13, 2026.
+The source repositories remain unchanged. [../PLAN.md](../PLAN.md) supplies the package design. Implementation through Phase 3 is recorded in product decisions;
+publication still requires separate authorization.
+
+version 0.1.1 was published to public Hex on September 13, 2026.
 
 | Document | Use |
 | --- | --- |
@@ -13,7 +14,8 @@ Hex on September 13, 2026.
 | [Elixir style](elixir-style.md) | Functions, errors, documentation, side effects |
 | [Interface design](interface-design.md) | Consumer API and compatibility |
 | [Testing](testing.md) | ExUnit, adapters, processes, consumer checks |
-| [Agent coordination](codex-agents.md) | Bounded assignments and review handoffs |
+| [Agent coordination](codex-agents.md) | Five-role specification, red/green, and review loop |
+| [Agent guardrails](agent-guardrails.md) | Hook activation, human approval, and enforcement limits |
 | [Data handling](data-handling.md) | Configuration, credentials, diagnostics |
 | [0.1.1 release](submission/release-0.1.1.md) | Published artifact and consumer verification |
 | [Release readiness](submission/readiness.md) | Prerequisites and evidence |
@@ -26,7 +28,8 @@ Hex release preparation. Payment instructions and browser privacy declarations h
 no direct counterpart here. Data handling replaces those product-specific privacy
 claims. The plan selects MIT; no payment model, hosted service, or end-user privacy policy
 is introduced.
-Marquee's Gherkin/UI pathways become public API acceptance tests in ExUnit.
+Cucumber/Gherkin scenarios map to public API acceptance tests in ExUnit.
 
 `docs/` contains maintained source guides. Generated ExDoc output belongs in `doc/`.
-This documentation does not install tools, configure agents, or enforce release gates.
+Project agent definitions and hook configuration live in `../.codex/`; hooks require
+human trust before activation. These do not authorize publication.

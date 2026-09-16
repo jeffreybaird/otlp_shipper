@@ -26,8 +26,20 @@ The suite starts an isolated loopback collector.
 | Package installation | Fresh consumer using unpacked package contents |
 
 Every new behavior and meaningful branch needs coverage. Acceptance tests enumerate
-consumer success and failure pathways. Gherkin, Phoenix, Wallaby, Ecto sandboxing,
-and ExMachina are not required for a library. Use simple fixture builders initially.
+consumer success and failure pathways. Write Cucumber-style Gherkin specifications
+under `docs/features/` before implementing new behavior. Map every scenario ID to
+an executable ExUnit unit/integration test (or the harness's Python tests for tooling).
+Gherkin is the acceptance specification; ExUnit remains the package test runner.
+Do not add a Cucumber runtime dependency to the shipped library. See
+[codex-agents.md](codex-agents.md) for the red/green handoff and evidence format.
+Phoenix, Wallaby, Ecto sandboxing, and ExMachina are not required.
+
+Any modification to an existing test requires human approval of the exact patch,
+including fixtures, helpers, doctests, formatting, renames, deletions, and a test
+created earlier in this task. Add new regression files for missing coverage.
+Never bypass this gate by deleting/recreating a file or changing test discovery.
+The same approval gate covers weakening lint/style rules or verification commands.
+Run checks with source frozen; stale green results do not validate a later edit.
 
 Test the client itself at its actual transport boundary: destination, method where
 applicable, headers, encoding, response parsing, timeouts, and mapped errors. A mock
