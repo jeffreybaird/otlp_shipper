@@ -7,6 +7,7 @@ mix deps.get
 mix format --check-formatted
 mix compile --warnings-as-errors
 mix test
+MIX_ENV=test mix cucumber
 ```
 
 CI also runs `mix dialyzer`, `mix hex.audit`, `mix docs --warnings-as-errors`, and
@@ -26,13 +27,28 @@ The suite starts an isolated loopback collector.
 | Package installation | Fresh consumer using unpacked package contents |
 
 Every new behavior and meaningful branch needs coverage. Acceptance tests enumerate
-consumer success and failure pathways. Write Cucumber-style Gherkin specifications
-under `docs/features/` before implementing new behavior. Map every scenario ID to
-an executable ExUnit unit/integration test (or the harness's Python tests for tooling).
-Gherkin is the acceptance specification; ExUnit remains the package test runner.
-Do not add a Cucumber runtime dependency to the shipped library. See
+consumer success and failure pathways. Write Gherkin specifications under
+`docs/features/` before implementing new behavior. Execute new Elixir acceptance
+features with CucumberEx, with ExUnit unit/integration tests proving lower-level
+boundaries. Map every scenario ID to its step definitions and relevant ExUnit tests
+(or the harness's Python tests for tooling). CucumberEx is a test-only dependency;
+it does not enter consumer releases. See
 [codex-agents.md](codex-agents.md) for the red/green handoff and evidence format.
 Phoenix, Wallaby, Ecto sandboxing, and ExMachina are not required.
+
+### Executable Gherkin
+
+Run `MIX_ENV=test mix cucumber` alongside `mix test`. Both CI toolchain jobs run
+this separate acceptance check. `config/config.exs` configures CucumberEx with
+`strict: true`, so undefined or pending steps fail the check.
+
+The initial executable feature is `docs/features/cucumberex.feature`. Place step
+definition modules under `features/step_definitions/` and register each future
+executable feature in CucumberEx's `paths` list in `config/config.exs`.
+Keep that list explicit: historical feature specifications, including the Python
+agent-harness scenarios, remain specifications mapped to their existing tests;
+they are not currently executable CucumberEx features. Do not add them to discovery
+until their step definitions implement the scenarios.
 
 Do not change a test, helper, fixture, doctest, or discovery setting to conceal an
 implementation defect. Compare expectation changes with the requested contract;
