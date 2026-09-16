@@ -1,207 +1,393 @@
 #!/usr/bin/env python3
-"""Conservative Codex edit guard; not a sandbox or a shell interpreter."""
+"""Narrow review reminders, not intent detection or a security boundary."""
+import ast
+from collections import Counter
 import json
 from pathlib import Path
 import re
 import shlex
-import subprocess
 import sys
 
-APPROVAL = ("Human approval required. Present the exact proposed patch and reason; "
-            "the human must review and apply protected changes outside the agent. "
-            "Do not bypass this guard or create an approval token.")
-SUPPRESSION = re.compile(r"(?i)(credo:disable|formatter:off|format:\s*off|noqa|nolint|"
-                         r"eslint-disable|@dialyzer|@tag\s+:skip|@moduletag\s+:skip|"
-                         r"skip:\s*true|warnings_as_errors:\s*false|"
-                         r"ignore_warnings|ignore_exit_status|continue-on-error|"
-                         r"dialyzer.*ignore|exclude:\s*\[)")
+TEST_REVIEW = (
+    "Review the proposed existing test/fixture/helper/doctest change against the "
+    "original contract, user request, implementation, and failure evidence. If it "
+    "conceals a defect, restore the intended tests and fix the implementation. "
+    "User-authorized contract changes, stronger coverage, and contract-preserving "
+    "refactors may proceed. Otherwise present the exact contract change and reason "
+    "for human review. This contextual reminder does not pause the pending write "
+    "and does not establish intent."
+)
+ANALYSIS_REVIEW = (
+    "Review the proposed static-analysis suppression, exclusion, disabled rule, or "
+    "removed check. Fix the code and its diagnostics instead of bypassing analysis "
+    "to make verification pass. A necessary exception needs explicit human "
+    "authorization; agents cannot approve one another. This contextual reminder "
+    "does not pause the pending write or establish intent."
+)
+MASKING_REASON = (
+    "This analyzer command explicitly masks failure status. Run the check without "
+    "exit masking and fix its diagnostics. A necessary analysis exception requires "
+    "explicit human authorization."
+)
+COMMENT_SUPPRESSION = re.compile(
+    r"(?i)\b(?:rubocop\s*:\s*(?:disable|todo)|noqa\b|nolint\b|"
+    r"eslint-disable\b|credo:disable\b|type:\s*ignore\b|pyright:\s*ignore\b|"
+    r"mypy:\s*ignore-errors\b|pylint:\s*disable\b|ruff:\s*noqa\b)"
+)
+ANALYZERS = {"dialyzer", "rubocop", "ruff", "mypy", "pyright", "pylint", "eslint", "credo"}
+SOURCE_SUFFIXES = {".ex", ".exs", ".rb", ".py", ".js", ".ts", ".tsx", ".jsx", ".sh"}
 
 
-def protected(path):
-    """Protect whole test/support trees and configuration conservatively."""
-    parts = path.parts
-    return (any(p in {"test", "tests", "features", "fixtures", ".codex", ".github", ".git", "scripts"}
-                for p in parts)
-            or path.name.startswith(("test_", ".formatter", ".credo", ".dialyzer"))
-            or path.name.endswith(("_test.exs", "_test.py", ".feature"))
-            or path.name in {"mix.exs", "mix.lock", ".tool-versions", "AGENTS.md",
-                             ".pre-commit-config.yaml", "Makefile", "PLAN.md"}
-            or str(path) in {"docs/elixir-style.md", "docs/testing.md", "docs/codex-agents.md",
-                             "docs/agent-guardrails.md"})
+def response(context=None, denial=None):
+    output = {"hookEventName": "PreToolUse"}
+    if denial:
+        output.update(permissionDecision="deny", permissionDecisionReason=denial)
+    else:
+        output["additionalContext"] = context
+    return {"hookSpecificOutput": output}
 
 
-def repository(cwd):
-    result = subprocess.run(["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
-                            text=True, capture_output=True, check=True, timeout=3)
-    return Path(result.stdout.strip()).resolve()
+def lexical_views(text):
+    """Mask quoted strings for code inspection; retain strings in comparison tokens.
 
-
-def patch_reason(command, root, cwd):
-    lines = command.splitlines()
-    if not lines or lines[0] != "*** Begin Patch" or lines[-1] != "*** End Patch":
-        return "Malformed patch."
-    seen = False
-    for line in lines[1:-1]:
-        match = re.match(r"^\*\*\* (Add File|Update File|Delete File|Move to): (.+)$", line)
-        if match:
-            seen = True
-            operation, name = match.groups()
-            raw = Path(name)
-            unresolved = cwd / raw
-            if any(p.is_symlink() for p in [unresolved, *unresolved.parents]):
-                return "Edits through symlinks require review."
-            target = unresolved.resolve()
-            if not target.is_relative_to(root):
-                return "Patch escapes the repository or follows an external symlink."
-            relative = target.relative_to(root)
-            # Never permit Add File to replace a file or a dangling symlink.
-            exists = target.exists() or (cwd / raw).is_symlink()
-            if operation == "Add File" and exists:
-                return "Add File would replace an existing file."
-            if operation != "Add File" and not exists and operation != "Move to":
-                return "Patch target does not exist."
-            if protected(relative) and (exists or operation != "Add File"):
-                return "Existing tests or verification configuration are protected."
-            # Configuration additions can disable rules too; only new tests are exempt.
-            if operation == "Add File" and (".git" in relative.parts or ".codex" in relative.parts or
-                    ".github" in relative.parts or relative.name in {"mix.exs", "AGENTS.md"}
-                    or relative.name.startswith((".formatter", ".credo", ".dialyzer"))):
-                return "Verification configuration requires review, including new files."
-            if exists and target.is_file():
-                content = target.read_text(errors="replace")
-                if re.search(r"iex>|>>>|\bdoctest\b", content):
-                    return "File contains existing doctests; changes require review."
-            continue
-        if line.startswith("*** ") and line not in {"*** End of File"}:
-            return "Unknown patch directive."
-        if line.startswith("+") and SUPPRESSION.search(line[1:]):
-            return "Potential lint, style, or test suppression."
-    return None if seen else "Patch has no file operations."
-
-
-def delivery_allowed(words):
-    """Narrow publication grammar; no hook bypass, force push, merge, or close."""
-    if words in [["scripts/package_smoke.sh"],
-                 ["OTLP_SMOKE_DEPENDENCY_SET=minimum", "scripts/package_smoke.sh"],
-                 ["OTLP_SMOKE_DEPENDENCY_SET=minimum_with_tracing", "scripts/package_smoke.sh"],
-                 ["gh", "auth", "status"]]:
-        return True
-    if words[:3] == ["git", "switch", "-c"]:
-        return (len(words) == 4 and re.fullmatch(r"codex/[A-Za-z0-9][A-Za-z0-9_/-]*", words[3])
-                is not None and "//" not in words[3] and not words[3].endswith("/"))
-    if words[:3] == ["shasum", "-a", "256"]:
-        return len(words) > 3 and all(p and not p.startswith("-") for p in words[3:])
-    if words[:2] == ["git", "add"]:
-        paths = words[2:]
-        if paths[:1] == ["--"]:
-            paths = paths[1:]
-        return bool(paths) and all(p and not p.startswith(("-", ":")) for p in paths)
-    if words[:2] == ["git", "commit"]:
-        return len(words) == 4 and words[2] in {"-m", "--file"} and not words[3].startswith("-")
-    if words[:2] == ["git", "push"]:
-        return len(words) in {2, 3, 4} and all(
-            re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_./-]*", p) for p in words[2:])
-    if words[:2] != ["gh", "pr"] or len(words) < 3:
-        return False
-    action = words[2]
-    args = words[3:]
-    if action in {"view", "checks"}:
-        return not args or (len(args) == 1 and args[0].isdigit())
-    if action not in {"create", "edit"}:
-        return False
-    if action == "edit" and args and args[0].isdigit():
-        args = args[1:]
-    options = {"--title", "--body-file", "--base", "--head"} if action == "create" else {"--title", "--body-file"}
+    This deliberately small lexer supports ordinary and triple-quoted literals and
+    line/block comments. It is not a language parser (e.g. arbitrary Ruby heredocs).
+    """
+    code, comments, tokens = [], [], []
     index = 0
-    while index < len(args):
-        if args[index] == "--draft" and action == "create":
-            index += 1
-        elif args[index] in options and index + 1 < len(args) and not args[index + 1].startswith("-"):
-            index += 2
+    while index < len(text):
+        char = text[index]
+        if char in "\"'`":
+            marker = char * 3 if text.startswith(char * 3, index) else char
+            end = index + len(marker)
+            while end < len(text):
+                if text[end] == "\\":
+                    end += 2
+                elif text.startswith(marker, end):
+                    end += len(marker)
+                    break
+                else:
+                    end += 1
+            literal = text[index:end]
+            tokens.append(literal)
+            code.append("".join("\n" if c == "\n" else " " for c in literal))
+            index = end
+        elif char == "#" or text.startswith("//", index) or text.startswith("/*", index):
+            block = text.startswith("/*", index)
+            end = text.find("*/" if block else "\n", index + 1)
+            end = len(text) if end < 0 else end + (2 if block else 0)
+            comment = text[index:end]
+            comments.append(comment)
+            code.append("".join("\n" if c == "\n" else " " for c in comment))
+            index = end
         else:
-            return False
-    return bool(args)
+            code.append(char)
+            if not char.isspace():
+                # Words/operators are tokens: preserve string contents and avoid
+                # confusing `foo bar` with `foobar` while tolerating indentation.
+                match = re.match(r"[\w]+|[^\w\s]", text[index:])
+                token = match.group(0)
+                tokens.append(token)
+                code.extend(token[1:])
+                index += len(token)
+            else:
+                index += 1
+    return "".join(code), comments, tokens
 
 
-def shell_reason(command):
-    # Do not try to infer arbitrary program side effects from command strings.
-    if any(c in command for c in "\n\r;&|<>`$(){}\\"):
-        return "Shell control syntax, expansion, or redirection requires review."
-    try:
-        words = shlex.split(command)
-    except ValueError:
-        return "Malformed shell command."
+def test_path(path):
+    return (bool(set(path.parts) & {"test", "tests", "fixtures", "features"})
+            or path.name.startswith("test_") or path.name.endswith(("_test.exs", "_test.py", ".feature")))
+
+
+def preserves_tokens(before, after):
+    """Existing tokens in order permit additions and whitespace-only changes."""
+    if before == after:
+        return True
+    remaining = iter(after)
+    return all(any(item == token for item in remaining) for token in before)
+
+
+def doctests(text):
+    """Extract prompt/output blocks so neighboring production edits are ignored."""
+    blocks, current = [], []
+    indent = 0
+    for line in text.splitlines():
+        stripped = line.strip()
+        if re.match(r"(?:iex(?:\([^)]*\))?>|>>>|\.\.\.)", stripped):
+            if not current:
+                indent = len(line) - len(line.lstrip())
+            current.append(line)
+        elif current:
+            if (not stripped or stripped in {'"""', "'''"}
+                    or len(line) - len(line.lstrip()) < indent
+                    or re.match(r"(?:def|defp|class|end|@doc|@spec)\b", stripped)):
+                blocks.append(lexical_views("\n".join(current))[2])
+                current = []
+            else:
+                current.append(line)
+    if current:
+        blocks.append(lexical_views("\n".join(current))[2])
+    return blocks
+
+
+def assertion_contracts(path, text):
+    """Compare assertions, including Python control-flow around each assertion."""
+    if path.suffix == ".py":
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            pass
+        else:
+            contracts = []
+
+            def visit(node, controls=()):
+                if isinstance(node, (ast.If, ast.While, ast.For, ast.Try, ast.With)):
+                    # Record only the controlling expressions, not the body:
+                    # adding a separate assertion must not change old contracts.
+                    controls += ((type(node).__name__, tuple(
+                        ast.dump(value, include_attributes=False)
+                        for name, value in ast.iter_fields(node)
+                        if isinstance(value, ast.AST) and name not in {"body", "orelse"})),)
+                if isinstance(node, ast.Assert):
+                    contracts.append((ast.dump(node, include_attributes=False), controls))
+                for child in ast.iter_child_nodes(node):
+                    visit(child, controls)
+
+            visit(tree)
+            return Counter(contracts)
+    return Counter(tuple(lexical_views(line)[2]) for line in text.splitlines()
+                   if re.match(r"\s*(?:assert|refute)\b", line))
+
+
+def test_change(path, before, after):
+    old_code, _, old_tokens = lexical_views(before)
+    new_code, _, new_tokens = lexical_views(after)
+    if test_path(path) and before:
+        skip = r"@(?:module)?tag\s+:skip\b|\bskip\s*[:(]|\b(?:xit|xdescribe)\s*\("
+        if len(re.findall(skip, new_code)) > len(re.findall(skip, old_code)):
+            return True
+        if (assertion_contracts(path, before) - assertion_contracts(path, after)
+                or not preserves_tokens(old_tokens, new_tokens)):
+            return True
+    # Compare entire pre/post source, including output-only doctest edits.
+    old_blocks = Counter(tuple(block) for block in doctests(before))
+    new_blocks = Counter(tuple(block) for block in doctests(after))
+    return bool(old_blocks - new_blocks)
+
+
+def shell_segments(command):
+    """Split only unquoted shell operators; shlex handles each simple command."""
+    segments, start, index, quote = [], 0, 0, None
+    while index < len(command):
+        char = command[index]
+        if char == "\\" and quote != "'":
+            index += 2
+            continue
+        if quote:
+            if char == quote:
+                quote = None
+        elif char in "\"'":
+            quote = char
+        elif char == "#" and (index == 0 or command[index - 1].isspace()
+                              or command[index - 1] in ";|&()"):
+            end = command.find("\n", index)
+            index = len(command) if end < 0 else end
+            continue
+        elif char in ";|&\n":
+            operator = char
+            if char in "|&" and command[index:index + 2] == char * 2:
+                operator *= 2
+            segments.append((command[start:index], operator))
+            index += len(operator)
+            start = index
+            continue
+        index += 1
+    segments.append((command[start:], ""))
+    return [(shlex.split(part, comments=True), operator) for part, operator in segments]
+
+
+def is_analyzer(words):
+    words = list(words)
+    while words and (re.match(r"^[A-Za-z_]\w*=", words[0]) or words[0] in {"env", "command", "exec"}):
+        words.pop(0)
+    if words[:2] == ["bundle", "exec"]:
+        words = words[2:]
     if not words:
-        return "Empty command."
-    if delivery_allowed(words):
+        return False
+    executable = Path(words[0]).name
+    return (executable in ANALYZERS
+            or executable == "mix" and len(words) > 1 and words[1] in {"dialyzer", "credo"}
+            or executable in {"python", "python3"} and len(words) > 2
+            and words[1] == "-m" and words[2] in ANALYZERS)
+
+
+def shell_masking(command):
+    pending = False
+    previous = ""
+    for words, operator in shell_segments(command):
+        analyzer = is_analyzer(words)
+        if analyzer and any(word.split("=", 1)[0] in {
+                "--ignore-exit-status", "--ignore_exit_status", "--exit-zero", "--exit_zero"}
+                for word in words):
+            return True
+        if pending and (previous == "||" and words in (["true"], [":"], ["exit", "0"])
+                        or previous in {";", "\n"} and words == ["exit", "0"]):
+            return True
+        pending = analyzer or pending and previous in {"&&", "||"}
+        previous = operator
+    return False
+
+
+def analysis_signatures(path, text):
+    """Count active suppression syntax, never prose or quoted fixture examples."""
+    if path.suffix in {".md", ".rst", ".txt", ".feature"}:
+        return Counter()
+    code, comments, _ = lexical_views(text)
+    signatures = []
+    if path.suffix in SOURCE_SUFFIXES:
+        signatures += [match.group(0).lower() for comment in comments
+                       for match in COMMENT_SUPPRESSION.finditer(comment)]
+        signatures += re.findall(r"@dialyzer\s*[^\n]*\b(?:nowarn_function|no_[a-z_]+)\b", code)
+    config = (path.name.startswith((".rubocop", ".credo", ".dialyzer", ".ruff", ".eslintrc"))
+              or path.name in {"mix.exs", "pyproject.toml", "setup.cfg", "mypy.ini", "eslint.config.js"}
+              or ".github" in path.parts)
+    if config:
+        signatures += re.findall(
+            r"(?im)\b(?:Enabled:\s*false|enabled:\s*false|warnings_as_errors:\s*false|"
+            r"ignore_warnings\s*:|ignore_exit_status\s*:\s*true|continue-on-error:\s*true|"
+            r"Exclude\s*:|exclude\s*[:=]|ignore\s*=|disable\s*=)", code)
+        # Include exclusion entries, so extending an existing list is visible.
+        # YAML quoted paths are values here, not executable suppression examples.
+        list_indent = None
+        for line in text.splitlines():
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            indent = len(line) - len(line.lstrip())
+            if list_indent is not None and indent > list_indent:
+                if line.lstrip().startswith("-"):
+                    signatures.append("exclusion-entry:" + line.strip())
+                continue
+            list_indent = None
+            if re.match(r"\s*(?:Exclude|exclude|ignore)\s*:\s*$", line):
+                list_indent = indent
+    return Counter(signatures)
+
+
+def analysis_commands(path, text, masking=False):
+    if path.suffix not in {".sh", ".yml", ".yaml"} and path.name != "Makefile":
+        return Counter()
+    commands = []
+    for line in text.splitlines():
+        stripped = re.sub(r"^\s*(?:-\s*)?run:\s*", "", line).strip()
+        if stripped.startswith("#"):
+            continue
+        try:
+            if masking:
+                if shell_masking(stripped):
+                    commands.append("masked-analyzer")
+                continue
+            for words, _ in shell_segments(stripped):
+                if is_analyzer(words):
+                    # Options/formatting changes alone do not remove the check.
+                    commands.append(next(word for word in words if Path(word).name in ANALYZERS))
+        except ValueError:
+            continue
+    return Counter(commands)
+
+
+def patch_files(patch, cwd):
+    """Read targets and reconstruct before/after for ordinary apply_patch hunks.
+
+    Unsupported/malformed hunks are left to the patch tool; never deny them as a
+    third policy category. File moves themselves do not change the contract.
+    """
+    lines = patch.splitlines()
+    index = 0
+    while index < len(lines):
+        match = re.match(r"\*\*\* (Add|Update|Delete) File: (.+)$", lines[index])
+        if not match:
+            index += 1
+            continue
+        operation, name = match.groups()
+        path = Path(name)
+        target = cwd / path
+        before = target.read_text() if target.is_file() else ""
+        index += 1
+        body = []
+        while index < len(lines) and not re.match(r"\*\*\* (?:Add|Update|Delete) File:|\*\*\* End Patch", lines[index]):
+            body.append(lines[index])
+            index += 1
+        if operation == "Delete":
+            yield path, before, ""
+        elif operation == "Add":
+            yield path, before, "\n".join(line[1:] for line in body if line.startswith("+")) + "\n"
+        else:
+            current = before.splitlines()
+            cursor, hunks, hunk = 0, [], []
+            for line in body:
+                if line.startswith("@@"):
+                    if hunk:
+                        hunks.append(hunk)
+                    hunk = []
+                elif line[:1] in {" ", "+", "-"}:
+                    hunk.append(line)
+            if hunk:
+                hunks.append(hunk)
+            valid = True
+            for hunk in hunks:
+                old = [line[1:] for line in hunk if line[0] != "+"]
+                new = [line[1:] for line in hunk if line[0] != "-"]
+                position = next((pos for pos in range(cursor, len(current) + 1)
+                                 if current[pos:pos + len(old)] == old), None)
+                if position is None:
+                    valid = False
+                    break
+                current[position:position + len(old)] = new
+                cursor = position + len(new)
+            if valid:
+                yield path, before, "\n".join(current) + ("\n" if before.endswith("\n") else "")
+
+
+def inspect_event(payload):
+    if not isinstance(payload, dict) or payload.get("hook_event_name") != "PreToolUse":
         return None
-    if words[0] == "mix":
-        fixed = {("deps.get",), ("format", "--check-formatted"),
-                 ("compile", "--warnings-as-errors"), ("test",), ("test", "--cover"),
-                 ("otlp_shipper.conformance",), ("dialyzer",),
-                 ("hex.audit",), ("docs", "--warnings-as-errors"), ("hex.build",)}
-        args = tuple(words[1:])
-        if args in fixed:
-            return None
-        if args and args[0] == "test" and all(
-                re.fullmatch(r"test/[\w/.-]+_test\.exs(?::\d+)?", x)
-                and ".." not in Path(x.split(":")[0]).parts for x in args[1:]):
-            return None
-        return "Only the documented verification commands are allowed."
-    if words[0] in {"cat", "head", "tail", "wc", "pwd", "ls"}:
+    name = payload.get("tool_name")
+    args = payload.get("tool_input")
+    if name not in {"Bash", "apply_patch"} or not isinstance(args, dict):
         return None
-    if words[0] == "rg":
-        if any(w in {"--pre", "--hostname-bin"} or w.startswith(("--pre=", "--hostname-bin=")) for w in words[1:]):
-            return "Ripgrep helper programs can execute arbitrary commands."
+    command = args.get("command")
+    if not isinstance(command, str):
         return None
-    if words[0] == "git" and len(words) > 1:
-        safe = {"status", "diff", "show", "log", "ls-files", "rev-parse"}
-        if words[1] in safe and not any(
-                w.startswith(("--ext-diff", "--textconv", "--output", "--exec"))
-                for w in words[2:]):
-            # Disable configured external diff and text conversion explicitly.
-            if words[1] in {"diff", "show", "log"} and not {
-                    "--no-ext-diff", "--no-textconv"}.issubset(words):
-                return "Git content reads require --no-ext-diff --no-textconv."
-            return None
-    if len(words) == 2 and words[0] in {"python3", "/usr/bin/python3"} and words[1] in {
-            "scripts/test_agent_guard.py", "scripts/test_agent_guard_workflow.py",
-            "scripts/test_agent_guard_paths.py", "scripts/test_agent_guard_orchestration.py",
-            "scripts/test_agent_guard_optional_checks.py"}:
-        return None
-    return "Unclassified execution requires human review; use apply_patch for ordinary edits."
+    if name == "Bash":
+        return response(denial=MASKING_REASON) if shell_masking(command) else None
+    reminders = []
+    for path, before, after in patch_files(command, Path(payload.get("cwd", "."))):
+        if test_change(path, before, after):
+            reminders.append(TEST_REVIEW)
+        if (analysis_signatures(path, after) - analysis_signatures(path, before)
+                or analysis_commands(path, before) - analysis_commands(path, after)
+                or analysis_commands(path, after, masking=True)
+                - analysis_commands(path, before, masking=True)):
+            reminders.append(ANALYSIS_REVIEW)
+    return response(context="\n".join(dict.fromkeys(reminders))) if reminders else None
 
 
 def evaluate(payload):
-    if not isinstance(payload, dict) or payload.get("hook_event_name") != "PreToolUse":
-        return "Malformed hook event."
-    name = payload.get("tool_name")
-    args = payload.get("tool_input")
-    if not isinstance(args, dict):
-        return "Malformed tool input."
-    if name in {"Bash", "apply_patch"}:
-        command = args.get("command")
-        if not isinstance(command, str):
-            return "Missing command string."
-        if name == "Bash":
-            return shell_reason(command)
-        cwd = Path(payload["cwd"]).resolve()
-        return patch_reason(command, repository(cwd), cwd)
-    if name in {"view_image", "update_plan", "spawn_agent", "send_message",
-                "wait", "wait_agent", "list_agents", "close_agent", "resume_agent"}:
+    try:
+        return inspect_event(payload)
+    except (ValueError, OSError, TypeError) as exc:
+        print("Narrow guard could not inspect input: " + type(exc).__name__, file=sys.stderr)
         return None
-    return "Opaque tools and interactive input are not approved write paths."
 
 
 def main():
     try:
-        reason = evaluate(json.load(sys.stdin))
-    except Exception as exc:
-        reason = "Guard could not validate the operation: " + type(exc).__name__
-    if reason:
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PreToolUse", "permissionDecision": "deny",
-            "permissionDecisionReason": reason + " " + APPROVAL}}))
+        result = evaluate(json.load(sys.stdin))
+        if result:
+            print(json.dumps(result))
+    except (ValueError, OSError, TypeError) as exc:
+        print("Narrow guard could not inspect input: " + type(exc).__name__, file=sys.stderr)
 
 
 if __name__ == "__main__":

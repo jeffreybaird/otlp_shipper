@@ -47,14 +47,18 @@ implementer. Repeat verification, PR updates, and independent review until all
 findings are resolved. Only the orchestrator owns commits, pushes, and the PR.
 Keep `mix.exs`, dependency changes, and shared public types under one owner.
 
-**Human approval is mandatory before any edit to an existing test, or any change
-that disables or weakens a lint/style rule.** This includes formatting, deletion,
-renaming, fixtures, helpers, doctests, skips, exclusions, and edits to tests created
-earlier in the same task. General development/commit authorization is not approval
-for these changes. Present the exact proposed patch and reason; never bypass hooks
-or treat another agent's approval as human approval. New test files are allowed.
-See [guardrail setup and limits](docs/agent-guardrails.md) for hook activation and
-the human-applied patch procedure. Guardrail configuration itself is protected.
+**Do not change existing tests to accommodate defective new code, or bypass static
+analysis to make verification pass.** Check the original contract and failing code
+before changing expectations, fixtures, helpers, skips, or coverage. Fix the code
+when it violates that contract. If a contract change is necessary but not already
+authorized by the user, present the exact change and reason for human review.
+New coverage, stronger assertions, formatting, renames, contract-preserving
+refactors, and test changes required by an authorized behavior change do not need
+separate approval. Do not disable analysis rules, exclude offending code, or mask
+failed checks instead of fixing their diagnostics. Any necessary analysis
+exception needs explicit human authorization; agents cannot approve one another.
+See [guardrail setup and limits](docs/agent-guardrails.md). The hook is a narrow
+review aid, not a general tool allowlist or a blanket lock on tests/configuration.
 
 ## Architecture and Elixir style
 

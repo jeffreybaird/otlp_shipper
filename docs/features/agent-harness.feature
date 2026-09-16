@@ -1,3 +1,5 @@
+# Historical acceptance specification for ec0a1df.
+# Hook behavior is superseded by narrow-guard.feature; workflow roles remain.
 Feature: Independent agent workflow with human-controlled verification changes
   The orchestrator coordinates specifications, tests, implementation and review.
   Cucumber/Gherkin records acceptance; Python tests execute hook behavior.
