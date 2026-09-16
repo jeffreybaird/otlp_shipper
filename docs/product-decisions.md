@@ -8,12 +8,14 @@ observations, with current release verification linked at the end.
 ## Planned scope
 
 - One package with independent logger-handler and `Telemetry.Metrics` reporter
-  components sharing configuration, resource/value encoding, transport, and buffering.
-- OTLP/HTTP protobuf logs and metrics to configurable collectors. No trace exporter,
-  full metrics/logs SDK, or dependency on a particular hub or Phoenix application.
+  components, plus a planned SDK-compatible trace exporter. Share transport,
+  generated encoding, and configuration conventions; only logs/metrics share buffering.
+- OTLP/HTTP protobuf logs and metrics are implemented. Trace export is planned in
+  PLAN.md Phases 4–7; no replacement SDK/API, new instrumentation framework, or
+  dependency on a particular hub or Phoenix application is included.
 - Required `telemetry_metrics` and `telemetry`; optional, guarded
   `opentelemetry_api` for log correlation. Vendor protocol sources and generate
-  encoders with gpb; avoid `opentelemetry_exporter` except the documented fallback.
+  encoders with gpb; do not depend on `opentelemetry_exporter` or reuse its codecs.
 - Bounded batching, drop-oldest overflow for logs, bounded retries, drop-on-failure,
   and observable export/drop outcomes. Export must not take down the host application.
 - Delta metrics: counters, sums, gauges, explicit-bound histograms; reject summaries
@@ -186,3 +188,26 @@ Version 0.1.1 was published September 13, 2026 at 15:47:57 UTC. It widens Finch
 from `~> 0.20.0` to `~> 0.20`, allowing `>= 0.20.0` and `< 1.0.0`, including
 consumers already using Finch 0.21.x. Other dependency requirements and runtime
 behavior are unchanged. See [0.1.1 verification](submission/release-0.1.1.md).
+
+## Tracing scope expansion — September 16, 2026 (planned)
+
+The owner requested expanding PLAN.md to handle tracing. The approved direction is
+an SDK-compatible OTLP/HTTP trace exporter, proposed as `OtlpShipper.TraceExporter`,
+sharing the existing core. Preserve the tracing API/SDK and existing instrumentation.
+The SDK owns batching, span lifecycle, sampling, and context; shipper owns conversion,
+transport retries within a deadline, and exporter diagnostics. Do not add another
+trace buffer or retain SDK-owned ETS data after the export callback.
+
+SDK resources and instrumentation scopes remain authoritative for traces. Existing
+logs/metrics APIs and optional tracing behavior stay intact. Tracing consumers supply
+a supported SDK/API pair; non-tracing consumers must still compile and run without
+them. The exact optional compilation, startup/cleanup, resource/configuration,
+callback result, limit, and timeout contracts require evidence in Phase 4 before
+their implementation. This planning change makes no dependency or runtime changes.
+
+Phases 4–7 cover compatibility/contracts, protocol/core, SDK integration, and
+replacement-consumer/Collector proof with migration and release preparation.
+Each phase waits for its predecessor's merge. A full tracing SDK replacement,
+gRPC, durable queues, metric exemplars, and global auto-configuration are deferred.
+The current release remains 0.1.1 with logs/metrics only; a candidate tracing release
+is a future readiness decision, not publication authorization.

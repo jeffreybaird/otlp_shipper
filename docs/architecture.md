@@ -1,24 +1,28 @@
 # OTLP architecture
 
 This guide summarizes [../PLAN.md](../PLAN.md). The shared core, Logger adapter,
-and metrics reporter are implemented through Phase 2.
+and metrics reporter are implemented, including Phase 3 conformance/release work.
+Trace export is planned in Phases 4–7 and is not part of the current 0.1.1 release.
 Confirmed: `otlp_shipper`, module root `OtlpShipper`, public Hex, Finch directly.
 
 ## One package, independent signals
 
 The log handler and metrics reporter share the core and never depend on each other.
 Keep the log handler replaceable if upstream SDK support makes it unnecessary.
-The consumer chooses which components to start. Traces remain outside this package.
+The consumer chooses which components to start. Planned trace export integrates
+with the existing OTel SDK batch processor; it does not replace that SDK or add
+another shipper queue for spans.
 
 | Component | Responsibility |
 | --- | --- |
 | Config | Explicit options over OTEL environment configuration; per-signal settings and endpoint rules |
-| Resource | Service identity and extra attributes; require `service.name` at startup |
+| Resource | Logs/metrics service identity and attributes; require `service.name` at startup; planned traces preserve the SDK resource |
 | Value | Shared generated-message inputs for AnyValue, KeyValue, and Resource |
 | Transport | OTLP/HTTP POST, headers, gzip, timeouts, bounded retry and failure reporting |
-| Buffer | Batching, periodic/size flush, bounded retention, shutdown flush |
+| Buffer | Logs/metrics batching, periodic/size flush, bounded retention, shutdown flush |
 | LogHandler | Logger event conversion, severity, correlation, metadata filtering and truncation |
 | MetricsReporter | Telemetry.Metrics attachment, tag/unit conversion, interval aggregation |
+| TraceExporter (planned) | SDK callbacks, faithful span/resource/scope conversion, synchronous bounded HTTP export in the SDK worker |
 
 Separate environment reads from pure configuration resolution for deterministic
 doctests. Validate the OTLP endpoint path and signal-specific precedence against the
@@ -33,8 +37,8 @@ dependency: verify the generated encoders in a production consumer. Include ever
 input and build step needed when Hex compiles the package outside this checkout.
 
 Keep `telemetry_metrics` and `telemetry` required, and `opentelemetry_api` optional
-with guarded use. Do not load the full SDK or gRPC stack by default. The exporter
-fallback requires the plan's timeboxed spike and a documented reason. Finch is the
+with guarded use. Do not load the full SDK or gRPC stack by default. Do not depend
+on the canonical exporter or reuse its generated codecs. Finch is the
 selected HTTP client. Keep its supervised pools isolated from host configuration.
 
 ## Resource limits and errors
@@ -103,3 +107,23 @@ callbacks safely, with no double unit conversion. Tags retain their meaning by
 rejecting excessive data instead of truncating; copied binary slices bound retained
 memory. Histogram bounds are validated after double conversion as well as before
 export. Numeric overflow is an observed drop, never wrapped arithmetic.
+
+## Planned trace boundary
+
+The proposed `OtlpShipper.TraceExporter` implements the SDK's exporter callbacks.
+The SDK owns span lifecycle, sampling, propagation, and batching. Export runs in
+the SDK worker and must finish consuming its temporary ETS table before returning.
+Preserve SDK resources, original instrumentation scopes, and supported span fields;
+do not stamp the logs/metrics envelope scope onto every span.
+
+Use bounded requests and one total conversion/HTTP/retry deadline, coordinated with
+SDK cancellation. Do not add a second span queue, replay accepted chunks after a
+later failure, or promise that SDK flush return acknowledges delivery. Finch must
+have explicit supervised ownership and cleanup independent of assumptions about
+SDK shutdown callbacks. Prevent exporter HTTP instrumentation from feeding traces
+back into itself. SDK queue limits and shipper request limits are separate contracts.
+
+Phase 4 must prove optional-SDK compilation, record compatibility, startup order,
+cleanup, callback result mapping, and numeric limits before implementation.
+Phases 5–7 build protocol support, integrate the SDK, and prove a packaged three-signal
+consumer with the canonical exporter absent. See PLAN.md §§12–16 for acceptance IDs.
