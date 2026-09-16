@@ -9,7 +9,7 @@ applicable architecture, interface, style, testing, and data-handling docs first
 | Role | Owns | Must not do |
 | --- | --- | --- |
 | Orchestrator | Scope, public contracts, assignment boundaries, integration, PR and final evidence | Declare completion with open findings or stale checks |
-| Spec writer | Feature plan, Cucumber/Gherkin scenarios, failing unit and integration tests | Implement production behavior or revise existing tests without human approval |
+| Spec writer | Feature plan, Cucumber/Gherkin scenarios, failing unit and integration tests | Implement production behavior or adapt tests to conceal implementation defects |
 | Test runner | Execute prescribed checks on frozen source; report exact results to implementer and orchestrator | Edit source/tests/config, repair failures, or silently substitute models |
 | Implementer | Minimal production changes that satisfy approved behavior | Change tests, weaken checks, expand scope, commit, or push |
 | Reviewer | Independent inspection against AGENTS.md and applicable docs; finding ledger | Fix its own findings or sign off without checking coverage and final changes |
@@ -44,12 +44,14 @@ an ordinary task/sidebar conversation for a subagent.
    Cucumber/Gherkin `Feature`, `Scenario`/`Scenario Outline`, `Given`, `When`, `Then`.
    Give scenarios stable IDs and map each to test file/test name in the work record.
    Cover happy path, declared failures, and boundaries. Write new unit and integration
-   test files. Existing test edits require the human gate, even during this stage.
+   test files. Existing test changes must preserve the intended contract or implement
+   a user-authorized contract change; they must never conceal an implementation defect.
 3. Runner executes the focused tests before implementation. Record command, exit
    code, expected failure and actual assertion, revision plus working-tree diff
    identity, and environment. Compilation/setup failures alone are not valid red
    evidence for an assertion-based regression. Return environment problems to the
-   orchestrator and test defects to the spec writer (subject to human approval).
+   orchestrator and test defects to the spec writer. Escalate unresolved contract
+   changes to the user; routine test corrections need no blanket approval.
 4. Implementer consumes the plan and runner report, changes only assigned production
    files, then requests the runner. Runner sends failures directly to the implementer
    and copies the orchestrator. Repeat until focused tests and applicable full checks
@@ -81,11 +83,13 @@ confirm the tree matches the verified snapshot and obtain review for that commit
 
 Run all applicable checks from AGENTS.md and testing.md before code commits.
 Documentation-only tasks use content/link checks. Harness code additionally runs
-the five `python3 scripts/test_agent_guard*.py` suites listed in
+the `python3 -m unittest discover -s scripts -p 'test_agent_guard*.py'` suite listed in
 [agent-guardrails.md](agent-guardrails.md). Pure docs/config work need not invent failing
 package tests; tooling behavior must have executable regression coverage.
 
-Human approval is required for every existing test edit and every lint/style
-weakening. Prepare a separate exact patch, explain its effect, and follow
-[agent-guardrails.md](agent-guardrails.md). The orchestrator and reviewer cannot
-approve on behalf of the human. A protected finding remains blocked until resolved.
+Never revise tests to accommodate defective code or bypass static analysis. Ask for
+human review when an unresolved contract change or necessary analysis exception is
+not already authorized; provide the exact change and reason. Routine test changes
+that preserve the contract and tests for user-authorized behavior changes may
+proceed. Follow [agent-guardrails.md](agent-guardrails.md). Agents cannot approve
+exceptions on behalf of the human.

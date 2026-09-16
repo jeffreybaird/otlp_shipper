@@ -34,11 +34,15 @@ Do not add a Cucumber runtime dependency to the shipped library. See
 [codex-agents.md](codex-agents.md) for the red/green handoff and evidence format.
 Phoenix, Wallaby, Ecto sandboxing, and ExMachina are not required.
 
-Any modification to an existing test requires human approval of the exact patch,
-including fixtures, helpers, doctests, formatting, renames, deletions, and a test
-created earlier in this task. Add new regression files for missing coverage.
-Never bypass this gate by deleting/recreating a file or changing test discovery.
-The same approval gate covers weakening lint/style rules or verification commands.
+Do not change a test, helper, fixture, doctest, or discovery setting to conceal an
+implementation defect. Compare expectation changes with the requested contract;
+fix defective code first. Authorized contract changes, stronger assertions,
+additional coverage, formatting, renames, and contract-preserving refactors do not
+need separate approval. Ask for review of an unresolved contract change rather
+than adapting expectations to observed output. Never suppress static-analysis
+diagnostics or mask a failed required check to make verification pass. A necessary
+analysis exception requires explicit human authorization. See [guardrail scope
+and limitations](agent-guardrails.md).
 Run checks with source frozen; stale green results do not validate a later edit.
 
 Test the client itself at its actual transport boundary: destination, method where

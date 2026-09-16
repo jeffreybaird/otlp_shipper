@@ -7,6 +7,7 @@ erl_crash.dump
 *.ez
 *.beam
 /.elixir_ls/
+__pycache__/
 .env
 /priv/plts/
 /*.tar

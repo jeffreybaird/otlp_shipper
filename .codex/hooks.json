@@ -1,15 +1,15 @@
 {
-  "description": "Require human review of existing tests and verification policy changes.",
+  "description": "Review existing test contract changes and static-analysis bypasses.",
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "*",
+        "matcher": "^(Bash|apply_patch)$",
         "hooks": [
           {
             "type": "command",
             "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/guard.py\"",
             "timeout": 10,
-            "statusMessage": "Checking protected edits"
+            "statusMessage": "Reviewing test contracts and analysis bypasses"
           }
         ]
       }
