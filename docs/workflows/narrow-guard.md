@@ -41,7 +41,8 @@ The five old classifier suites encoded the superseded deny-by-default contract.
 They are replaced by independently written narrow-contract coverage, including
 direct hook evaluation and subprocess protocol tests. Historical evidence remains
 in agent-harness.md. Package tests and static-analysis commands are unchanged.
-CI now runs hook regression discovery before package verification.
+The existing dedicated agent-harness CI job now runs hook regression discovery;
+its Python 3.11 setup and configuration parse checks remain intact.
 
 Initial implementation passed 26 regression tests under Python 3.14.6 and system
 Python 3.9.6, including eight independently added boundary cases (already green;
