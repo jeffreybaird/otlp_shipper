@@ -1,7 +1,9 @@
 # Narrow test and static-analysis review
 
-The [hook definition](../.codex/hooks.json) runs [guard.py](../.codex/hooks/guard.py)
-only for canonical `Bash` and `apply_patch` tool events. It has two concerns:
+The [hook definition](../.codex/hooks.json) runs the
+[deadline wrapper](../.codex/hooks/run_guard.py), which invokes
+[guard.py](../.codex/hooks/guard.py), only for canonical `Bash` and `apply_patch`
+tool events. The classifier has two concerns:
 
 1. Existing tests being changed to accommodate defective implementation code.
 2. Static-analysis tools being bypassed instead of their diagnostics being fixed.
@@ -44,14 +46,38 @@ inputs, issues approval tokens, or treats unknown operations as forbidden.
 The implementation recognizes common patch and analyzer syntax. It is not a full
 Elixir/Ruby/Python parser, shell interpreter, or malicious-agent security boundary.
 External editors, arbitrary scripts, MCP writes, and interactive input are not
-intercepted by this hook. Invalid or unsupported input and inspection errors do not
-create a third category of denied work. Check stderr for inspection diagnostics.
-Keep independent diff review and all normal verification requirements.
+intercepted by this hook. The classifier still ignores unsupported inputs and catches
+some inspection errors internally. The wrapper cannot recognize an inspection error
+that the classifier turns into a successful empty response. Keep independent diff
+review and all normal verification requirements.
+
+## Execution failures and deadlines
+
+The wrapper gives the classifier five seconds and bounds its own input reading and
+inspection to seven seconds. The host hook timeout remains ten seconds. A child
+timeout, nonzero exit, spawn failure, or malformed/unsupported output produces an
+explicit `PreToolUse` denial. Timed-out child processes are killed and reaped.
+Valid contextual reminders and explicit denials pass through unchanged. A successful
+empty response still permits the pending call; stderr alone does not cause denial.
+
+On an execution failure, stop the pending tool call and diagnose the hook. Do not
+repeat the call or switch tools merely to bypass that failure. After repairing the
+cause, verify the hook before retrying the intended operation.
+
+This local wrapper is **not an absolute fail-closed guarantee**. Source inspection
+of Codex 0.153.4 found that the host's outer hook timeout fails open. Failures before
+the wrapper starts (including Git path resolution or Python startup), wrapper/host
+termination, and the outer deadline can still prevent it from returning a denial.
+The source patch intended to close that runtime gap is being tested separately in
+`/tmp/codex-fail-closed-0.153.4`; it is not installed in the running host. The planned
+patch artifact is `docs/patches/codex-0.153.4-pretool-fail-closed.patch`. Do not claim
+runtime enforcement from a repository patch or a local wrapper test. See the
+[work record](workflows/guard-deadline.md) for verification status.
 
 ## Activation and verification
 
-The user deactivated the old hook during this update. Do not silently reactivate it.
-Review the changed definition in `/hooks` and trust/enable it when ready. Host
+The changed command requires the user to review and trust it through `/hooks`.
+Do not silently trust or enable it on the user's behalf. Host
 lifecycle may require a fresh session. Changing repository files alone does not
 prove live enforcement.
 

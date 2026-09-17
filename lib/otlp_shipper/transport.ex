@@ -74,14 +74,7 @@ defmodule OtlpShipper.Transport do
 
       case classify(response, config.signal) do
         {:retry, _error, headers} when number < config.max_retries ->
-          delay = retry_delay(headers, number, config)
-
-          if delay < deadline - System.monotonic_time(:millisecond) do
-            Process.sleep(delay)
-            attempt(request, config, finch, deadline, number + 1)
-          else
-            {:error, :timeout}
-          end
+          retry(request, config, finch, deadline, number, headers)
 
         {:retry, error, _} ->
           error
@@ -89,6 +82,17 @@ defmodule OtlpShipper.Transport do
         result ->
           result
       end
+    end
+  end
+
+  defp retry(request, config, finch, deadline, number, headers) do
+    delay = retry_delay(headers, number, config)
+
+    if delay < deadline - System.monotonic_time(:millisecond) do
+      Process.sleep(delay)
+      attempt(request, config, finch, deadline, number + 1)
+    else
+      {:error, :timeout}
     end
   end
 
