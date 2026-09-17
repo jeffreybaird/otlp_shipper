@@ -67,6 +67,9 @@ jobs:
       - name: Verify package in a clean production consumer
         run: scripts/package_smoke.sh
 
+      - name: Verify optional trace SDK compilation in fresh releases
+        run: sh scripts/trace_consumer_smoke.sh
+
   minimum:
     runs-on: ubuntu-latest
     steps:
@@ -88,3 +91,6 @@ jobs:
         run: OTLP_SMOKE_DEPENDENCY_SET=minimum scripts/package_smoke.sh
       - name: Verify minimum optional tracing API
         run: OTLP_SMOKE_DEPENDENCY_SET=minimum_with_tracing scripts/package_smoke.sh
+
+      - name: Verify optional trace SDK compilation in fresh releases
+        run: sh scripts/trace_consumer_smoke.sh

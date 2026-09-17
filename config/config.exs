@@ -1,11 +1,11 @@
 import Config
 
-# The SDK exists only in tests to prove real span correlation. Never export traces.
+# Disable the default network exporter; compatibility probes own isolated providers.
 if config_env() == :test do
   config :opentelemetry, traces_exporter: :none
 
   config :cucumberex, :config,
-    paths: ["docs/features/cucumberex.feature"],
+    paths: ["docs/features/cucumberex.feature", "docs/features/trace-compatibility.feature"],
     strict: true
 end
 
