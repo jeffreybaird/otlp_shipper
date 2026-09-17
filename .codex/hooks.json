@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/guard.py\"",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/run_guard.py\"",
             "timeout": 10,
             "statusMessage": "Reviewing test contracts and analysis bypasses"
           }

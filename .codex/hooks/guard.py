@@ -39,6 +39,7 @@ SOURCE_SUFFIXES = {".ex", ".exs", ".rb", ".py", ".js", ".ts", ".tsx", ".jsx", ".
 
 
 def response(context=None, denial=None):
+    """Build a contextual reminder or explicit denial in the hook protocol."""
     output = {"hookEventName": "PreToolUse"}
     if denial:
         output.update(permissionDecision="deny", permissionDecisionReason=denial)
@@ -47,55 +48,68 @@ def response(context=None, denial=None):
     return {"hookSpecificOutput": output}
 
 
-def lexical_views(text):
-    """Mask quoted strings for code inspection; retain strings in comparison tokens.
+def masked_text(text):
+    """Hide content while preserving its newline positions."""
+    return "".join("\n" if char == "\n" else " " for char in text)
 
-    This deliberately small lexer supports ordinary and triple-quoted literals and
-    line/block comments. It is not a language parser (e.g. arbitrary Ruby heredocs).
+
+def quoted_end(text, start):
+    """Find the end of an ordinary or triple-quoted escaped literal."""
+    char = text[start]
+    marker = char * 3 if text.startswith(char * 3, start) else char
+    end = start + len(marker)
+    while end < len(text):
+        if text[end] == "\\":
+            end += 2
+        elif text.startswith(marker, end):
+            return end + len(marker)
+        else:
+            end += 1
+    return end
+
+
+def comment_end(text, start):
+    """Find the end of a line or block comment without consuming line breaks."""
+    block = text.startswith("/*", start)
+    end = text.find("*/" if block else "\n", start + 1)
+    return len(text) if end < 0 else end + (2 if block else 0)
+
+
+def lexical_views(text):
+    """Return masked code, comments, and literal-preserving comparison tokens.
+
+    This small lexer handles ordinary/triple quotes and line/block comments;
+    it is not a language parser, including arbitrary Ruby heredocs.
     """
     code, comments, tokens = [], [], []
     index = 0
     while index < len(text):
         char = text[index]
         if char in "\"'`":
-            marker = char * 3 if text.startswith(char * 3, index) else char
-            end = index + len(marker)
-            while end < len(text):
-                if text[end] == "\\":
-                    end += 2
-                elif text.startswith(marker, end):
-                    end += len(marker)
-                    break
-                else:
-                    end += 1
+            end = quoted_end(text, index)
             literal = text[index:end]
             tokens.append(literal)
-            code.append("".join("\n" if c == "\n" else " " for c in literal))
+            code.append(masked_text(literal))
             index = end
         elif char == "#" or text.startswith("//", index) or text.startswith("/*", index):
-            block = text.startswith("/*", index)
-            end = text.find("*/" if block else "\n", index + 1)
-            end = len(text) if end < 0 else end + (2 if block else 0)
+            end = comment_end(text, index)
             comment = text[index:end]
             comments.append(comment)
-            code.append("".join("\n" if c == "\n" else " " for c in comment))
+            code.append(masked_text(comment))
             index = end
-        else:
+        elif char.isspace():
             code.append(char)
-            if not char.isspace():
-                # Words/operators are tokens: preserve string contents and avoid
-                # confusing `foo bar` with `foobar` while tolerating indentation.
-                match = re.match(r"[\w]+|[^\w\s]", text[index:])
-                token = match.group(0)
-                tokens.append(token)
-                code.extend(token[1:])
-                index += len(token)
-            else:
-                index += 1
+            index += 1
+        else:
+            token = re.match(r"[\w]+|[^\w\s]", text[index:]).group(0)
+            tokens.append(token)
+            code.append(token)
+            index += len(token)
     return "".join(code), comments, tokens
 
 
 def test_path(path):
+    """Recognize paths conventionally containing tests, fixtures, or features."""
     return (bool(set(path.parts) & {"test", "tests", "fixtures", "features"})
             or path.name.startswith("test_") or path.name.endswith(("_test.exs", "_test.py", ".feature")))
 
@@ -106,6 +120,14 @@ def preserves_tokens(before, after):
         return True
     remaining = iter(after)
     return all(any(item == token for item in remaining) for token in before)
+
+
+def ends_doctest(line, indent):
+    """Recognize blank lines, closing quotes, dedents, and source declarations."""
+    stripped = line.strip()
+    return (not stripped or stripped in {'"""', "'''"}
+            or len(line) - len(line.lstrip()) < indent
+            or re.match(r"(?:def|defp|class|end|@doc|@spec)\b", stripped))
 
 
 def doctests(text):
@@ -119,9 +141,7 @@ def doctests(text):
                 indent = len(line) - len(line.lstrip())
             current.append(line)
         elif current:
-            if (not stripped or stripped in {'"""', "'''"}
-                    or len(line) - len(line.lstrip()) < indent
-                    or re.match(r"(?:def|defp|class|end|@doc|@spec)\b", stripped)):
+            if ends_doctest(line, indent):
                 blocks.append(lexical_views("\n".join(current))[2])
                 current = []
             else:
@@ -131,36 +151,34 @@ def doctests(text):
     return blocks
 
 
+def python_assertion_contracts(node, controls=()):
+    """Yield assertions paired with their enclosing control expressions."""
+    if isinstance(node, (ast.If, ast.While, ast.For, ast.Try, ast.With)):
+        controls += ((type(node).__name__, tuple(
+            ast.dump(value, include_attributes=False)
+            for name, value in ast.iter_fields(node)
+            if isinstance(value, ast.AST) and name not in {"body", "orelse"})),)
+    if isinstance(node, ast.Assert):
+        yield ast.dump(node, include_attributes=False), controls
+    for child in ast.iter_child_nodes(node):
+        yield from python_assertion_contracts(child, controls)
+
+
 def assertion_contracts(path, text):
-    """Compare assertions, including Python control-flow around each assertion."""
+    """Count assertion syntax, including enclosing Python control flow."""
     if path.suffix == ".py":
         try:
             tree = ast.parse(text)
         except SyntaxError:
             pass
         else:
-            contracts = []
-
-            def visit(node, controls=()):
-                if isinstance(node, (ast.If, ast.While, ast.For, ast.Try, ast.With)):
-                    # Record only the controlling expressions, not the body:
-                    # adding a separate assertion must not change old contracts.
-                    controls += ((type(node).__name__, tuple(
-                        ast.dump(value, include_attributes=False)
-                        for name, value in ast.iter_fields(node)
-                        if isinstance(value, ast.AST) and name not in {"body", "orelse"})),)
-                if isinstance(node, ast.Assert):
-                    contracts.append((ast.dump(node, include_attributes=False), controls))
-                for child in ast.iter_child_nodes(node):
-                    visit(child, controls)
-
-            visit(tree)
-            return Counter(contracts)
+            return Counter(python_assertion_contracts(tree))
     return Counter(tuple(lexical_views(line)[2]) for line in text.splitlines()
                    if re.match(r"\s*(?:assert|refute)\b", line))
 
 
 def test_change(path, before, after):
+    """Detect lost contracts or added skip markers in existing test/doctest text."""
     old_code, _, old_tokens = lexical_views(before)
     new_code, _, new_tokens = lexical_views(after)
     if test_path(path) and before:
@@ -176,8 +194,8 @@ def test_change(path, before, after):
     return bool(old_blocks - new_blocks)
 
 
-def shell_segments(command):
-    """Split only unquoted shell operators; shlex handles each simple command."""
+def raw_shell_segments(command):
+    """Split unquoted operators while preserving shell quotes and comments."""
     segments, start, index, quote = [], 0, 0, None
     while index < len(command):
         char = command[index]
@@ -204,10 +222,17 @@ def shell_segments(command):
             continue
         index += 1
     segments.append((command[start:], ""))
-    return [(shlex.split(part, comments=True), operator) for part, operator in segments]
+    return segments
+
+
+def shell_segments(command):
+    """Decode words in each shell segment while retaining its following operator."""
+    return [(shlex.split(part, comments=True), operator)
+            for part, operator in raw_shell_segments(command)]
 
 
 def is_analyzer(words):
+    """Recognize analyzer executables after supported shell command wrappers."""
     words = list(words)
     while words and (re.match(r"^[A-Za-z_]\w*=", words[0]) or words[0] in {"env", "command", "exec"}):
         words.pop(0)
@@ -223,6 +248,7 @@ def is_analyzer(words):
 
 
 def shell_masking(command):
+    """Detect analyzer status masking across supported flags and shell operators."""
     pending = False
     previous = ""
     for words, operator in shell_segments(command):
@@ -239,6 +265,29 @@ def shell_masking(command):
     return False
 
 
+def analysis_config_path(path):
+    """Recognize supported analyzer configuration and workflow paths."""
+    return (path.name.startswith((".rubocop", ".credo", ".dialyzer", ".ruff", ".eslintrc"))
+              or path.name in {"mix.exs", "pyproject.toml", "setup.cfg", "mypy.ini", "eslint.config.js"}
+              or ".github" in path.parts)
+
+
+def exclusion_entries(text):
+    """Yield indented YAML exclusion entries, preserving quoted path values."""
+    list_indent = None
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip())
+        if list_indent is not None and indent > list_indent:
+            if line.lstrip().startswith("-"):
+                yield "exclusion-entry:" + line.strip()
+            continue
+        list_indent = None
+        if re.match(r"\s*(?:Exclude|exclude|ignore)\s*:\s*$", line):
+            list_indent = indent
+
+
 def analysis_signatures(path, text):
     """Count active suppression syntax, never prose or quoted fixture examples."""
     if path.suffix in {".md", ".rst", ".txt", ".feature"}:
@@ -249,32 +298,17 @@ def analysis_signatures(path, text):
         signatures += [match.group(0).lower() for comment in comments
                        for match in COMMENT_SUPPRESSION.finditer(comment)]
         signatures += re.findall(r"@dialyzer\s*[^\n]*\b(?:nowarn_function|no_[a-z_]+)\b", code)
-    config = (path.name.startswith((".rubocop", ".credo", ".dialyzer", ".ruff", ".eslintrc"))
-              or path.name in {"mix.exs", "pyproject.toml", "setup.cfg", "mypy.ini", "eslint.config.js"}
-              or ".github" in path.parts)
-    if config:
+    if analysis_config_path(path):
         signatures += re.findall(
             r"(?im)\b(?:Enabled:\s*false|enabled:\s*false|warnings_as_errors:\s*false|"
             r"ignore_warnings\s*:|ignore_exit_status\s*:\s*true|continue-on-error:\s*true|"
             r"Exclude\s*:|exclude\s*[:=]|ignore\s*=|disable\s*=)", code)
-        # Include exclusion entries, so extending an existing list is visible.
-        # YAML quoted paths are values here, not executable suppression examples.
-        list_indent = None
-        for line in text.splitlines():
-            if not line.strip() or line.lstrip().startswith("#"):
-                continue
-            indent = len(line) - len(line.lstrip())
-            if list_indent is not None and indent > list_indent:
-                if line.lstrip().startswith("-"):
-                    signatures.append("exclusion-entry:" + line.strip())
-                continue
-            list_indent = None
-            if re.match(r"\s*(?:Exclude|exclude|ignore)\s*:\s*$", line):
-                list_indent = indent
+        signatures += exclusion_entries(text)
     return Counter(signatures)
 
 
 def analysis_commands(path, text, masking=False):
+    """Count analyzer invocations or masked invocations in supported task files."""
     if path.suffix not in {".sh", ".yml", ".yaml"} and path.name != "Makefile":
         return Counter()
     commands = []
@@ -296,12 +330,8 @@ def analysis_commands(path, text, masking=False):
     return Counter(commands)
 
 
-def patch_files(patch, cwd):
-    """Read targets and reconstruct before/after for ordinary apply_patch hunks.
-
-    Unsupported/malformed hunks are left to the patch tool; never deny them as a
-    third policy category. File moves themselves do not change the contract.
-    """
+def patch_sections(patch):
+    """Yield operation, path, and raw body for each recognized patch section."""
     lines = patch.splitlines()
     index = 0
     while index < len(lines):
@@ -310,46 +340,69 @@ def patch_files(patch, cwd):
             index += 1
             continue
         operation, name = match.groups()
-        path = Path(name)
-        target = cwd / path
-        before = target.read_text() if target.is_file() else ""
         index += 1
         body = []
         while index < len(lines) and not re.match(r"\*\*\* (?:Add|Update|Delete) File:|\*\*\* End Patch", lines[index]):
             body.append(lines[index])
             index += 1
-        if operation == "Delete":
-            yield path, before, ""
-        elif operation == "Add":
-            yield path, before, "\n".join(line[1:] for line in body if line.startswith("+")) + "\n"
-        else:
-            current = before.splitlines()
-            cursor, hunks, hunk = 0, [], []
-            for line in body:
-                if line.startswith("@@"):
-                    if hunk:
-                        hunks.append(hunk)
-                    hunk = []
-                elif line[:1] in {" ", "+", "-"}:
-                    hunk.append(line)
+        yield operation, Path(name), body
+
+
+def patch_hunks(body):
+    """Collect context/addition/deletion lines between hunk markers."""
+    hunk = []
+    for line in body:
+        if line.startswith("@@"):
             if hunk:
-                hunks.append(hunk)
-            valid = True
-            for hunk in hunks:
-                old = [line[1:] for line in hunk if line[0] != "+"]
-                new = [line[1:] for line in hunk if line[0] != "-"]
-                position = next((pos for pos in range(cursor, len(current) + 1)
-                                 if current[pos:pos + len(old)] == old), None)
-                if position is None:
-                    valid = False
-                    break
-                current[position:position + len(old)] = new
-                cursor = position + len(new)
-            if valid:
-                yield path, before, "\n".join(current) + ("\n" if before.endswith("\n") else "")
+                yield hunk
+            hunk = []
+        elif line[:1] in {" ", "+", "-"}:
+            hunk.append(line)
+    if hunk:
+        yield hunk
+
+
+def reconstruct_update(before, body):
+    """Apply ordered matching hunks in memory; return None if one cannot match."""
+    current = before.splitlines()
+    cursor = 0
+    for hunk in patch_hunks(body):
+        old = [line[1:] for line in hunk if line[0] != "+"]
+        new = [line[1:] for line in hunk if line[0] != "-"]
+        position = next((pos for pos in range(cursor, len(current) + 1)
+                         if current[pos:pos + len(old)] == old), None)
+        if position is None:
+            return None
+        current[position:position + len(old)] = new
+        cursor = position + len(new)
+    return "\n".join(current) + ("\n" if before.endswith("\n") else "")
+
+
+def reconstruct_patch(operation, before, body):
+    """Produce a section's resulting text without reading or writing files."""
+    if operation == "Delete":
+        return ""
+    if operation == "Add":
+        return "\n".join(line[1:] for line in body if line.startswith("+")) + "\n"
+    return reconstruct_update(before, body)
+
+
+def patch_files(patch, cwd):
+    """Read patch targets and yield reconstructed before/after source snapshots.
+
+    Unsupported hunks remain the patch tool's concern. Moves alone do not change
+    contracts. This is the filesystem boundary; reconstruction is pure.
+    """
+    for operation, path, body in patch_sections(patch):
+        target = cwd / path
+        before = target.read_text() if target.is_file() else ""
+        after = reconstruct_patch(operation, before, body)
+        if after is not None:
+            yield path, before, after
 
 
 def inspect_event(payload):
+    """Route supported tool events to shell policy or patch snapshot review."""
     if not isinstance(payload, dict) or payload.get("hook_event_name") != "PreToolUse":
         return None
     name = payload.get("tool_name")
@@ -361,19 +414,26 @@ def inspect_event(payload):
         return None
     if name == "Bash":
         return response(denial=MASKING_REASON) if shell_masking(command) else None
-    reminders = []
-    for path, before, after in patch_files(command, Path(payload.get("cwd", "."))):
-        if test_change(path, before, after):
-            reminders.append(TEST_REVIEW)
-        if (analysis_signatures(path, after) - analysis_signatures(path, before)
-                or analysis_commands(path, before) - analysis_commands(path, after)
-                or analysis_commands(path, after, masking=True)
-                - analysis_commands(path, before, masking=True)):
-            reminders.append(ANALYSIS_REVIEW)
+    snapshots = patch_files(command, Path(payload.get("cwd", ".")))
+    reminders = [reminder for snapshot in snapshots for reminder in patch_reminders(*snapshot)]
     return response(context="\n".join(dict.fromkeys(reminders))) if reminders else None
 
 
+def patch_reminders(path, before, after):
+    """Return contract and analysis reminders for one in-memory source change."""
+    reminders = []
+    if test_change(path, before, after):
+        reminders.append(TEST_REVIEW)
+    if (analysis_signatures(path, after) - analysis_signatures(path, before)
+            or analysis_commands(path, before) - analysis_commands(path, after)
+            or analysis_commands(path, after, masking=True)
+            - analysis_commands(path, before, masking=True)):
+        reminders.append(ANALYSIS_REVIEW)
+    return reminders
+
+
 def evaluate(payload):
+    """Inspect one payload, reporting supported inspection errors without denying."""
     try:
         return inspect_event(payload)
     except (ValueError, OSError, TypeError) as exc:
@@ -382,6 +442,7 @@ def evaluate(payload):
 
 
 def main():
+    """Read the event from stdin and emit a response only when inspection returns one."""
     try:
         result = evaluate(json.load(sys.stdin))
         if result:

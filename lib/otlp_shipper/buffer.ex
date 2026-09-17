@@ -233,15 +233,19 @@ defmodule OtlpShipper.Buffer do
       if count >= handle.config.max_batch or bytes + size > handle.config.max_batch_bytes do
         {:halt, {items, count, bytes}}
       else
-        deleted = :ets.select_delete(handle.table, [{{slot, sequence, :"$1", :"$2"}, [], [true]}])
-
-        if deleted == 1,
-          do: {:cont, {[item | items], count + 1, bytes + size}},
-          else: {:cont, {items, count, bytes}}
+        take_entry(handle.table, {slot, sequence, item, size}, {items, count, bytes})
       end
     end)
     |> elem(0)
     |> Enum.reverse()
+  end
+
+  defp take_entry(table, {slot, sequence, item, size}, {items, count, bytes}) do
+    deleted = :ets.select_delete(table, [{{slot, sequence, :"$1", :"$2"}, [], [true]}])
+
+    if deleted == 1,
+      do: {:cont, {[item | items], count + 1, bytes + size}},
+      else: {:cont, {items, count, bytes}}
   end
 
   defp start_export(export, items) do
@@ -270,33 +274,31 @@ defmodule OtlpShipper.Buffer do
   end
 
   defp drain_shutdown(state, deadline) do
-    cond do
-      System.monotonic_time(:millisecond) >= deadline ->
-        dropped(state.handle.config.signal, size(state.handle), :shutdown)
-
-      true ->
-        case take_batch(state.handle) do
-          [] ->
-            :ok
-
-          items ->
-            task = start_export(state.export, items)
-            remaining = max(deadline - System.monotonic_time(:millisecond), 0)
-
-            case Task.yield(task, remaining) || Task.shutdown(task, :brutal_kill) do
-              {:ok, {:buffer_failure, :callback_failed}} ->
-                dropped(state.handle.config.signal, length(items), :export_failed)
-
-              {:ok, _} ->
-                :ok
-
-              _ ->
-                dropped(state.handle.config.signal, length(items), :export_failed)
-            end
-
-            drain_shutdown(state, deadline)
-        end
+    if System.monotonic_time(:millisecond) >= deadline do
+      dropped(state.handle.config.signal, size(state.handle), :shutdown)
+    else
+      drain_batch(state, deadline, take_batch(state.handle))
     end
+  end
+
+  defp drain_batch(_state, _deadline, []), do: :ok
+
+  defp drain_batch(state, deadline, items) do
+    task = start_export(state.export, items)
+    remaining = max(deadline - System.monotonic_time(:millisecond), 0)
+
+    case Task.yield(task, remaining) || Task.shutdown(task, :brutal_kill) do
+      {:ok, {:buffer_failure, :callback_failed}} ->
+        dropped(state.handle.config.signal, length(items), :export_failed)
+
+      {:ok, _} ->
+        :ok
+
+      _ ->
+        dropped(state.handle.config.signal, length(items), :export_failed)
+    end
+
+    drain_shutdown(state, deadline)
   end
 
   defp dropped(_signal, 0, _reason), do: :ok

@@ -2,7 +2,7 @@ defmodule OtlpShipper.MetricsReporterTest do
   use OtlpShipper.CollectorCase, async: false
   import Telemetry.Metrics
   alias OtlpShipper.{Buffer, MetricsReporter}
-  alias OtlpShipper.Metrics.{Registration, Worker}
+  alias OtlpShipper.Metrics.{Definition, Registration, Worker}
   @event [:phase2, :sample]
   @moduletag capture_log: true
 
@@ -353,7 +353,7 @@ defmodule OtlpShipper.MetricsReporterTest do
     refute_receive {:export, _, _, _, _, _}, 30
     # A malformed measurement callback emits a drop while the recursion guard is set.
     bad = %{hd(metrics) | measurement: fn _ -> raise "bad" end}
-    {:ok, [definition]} = OtlpShipper.Metrics.Definition.new([bad])
+    {:ok, [definition]} = Definition.new([bad])
     ingress = :sys.get_state(child(reporter, Worker)).ingress
     :ok = Registration.handle_event(@event, %{}, %{}, {[definition], ingress})
     :ok = MetricsReporter.flush(reporter)
