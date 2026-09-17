@@ -49,6 +49,9 @@ jobs:
       - name: Run tests
         run: mix test
 
+      - name: Run strict Cucumber acceptance tests
+        run: MIX_ENV=test mix cucumber
+
       - name: Static analysis
         run: mix dialyzer
 
@@ -74,6 +77,8 @@ jobs:
         run: mix deps.get
       - name: Verify oldest supported toolchain
         run: mix compile --warnings-as-errors && mix test
+      - name: Run strict Cucumber acceptance tests
+        run: MIX_ENV=test mix cucumber
       - name: Verify minimum runtime dependencies without tracing
         run: OTLP_SMOKE_DEPENDENCY_SET=minimum scripts/package_smoke.sh
       - name: Verify minimum optional tracing API
