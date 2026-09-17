@@ -28,28 +28,9 @@ defmodule Mix.Tasks.Compile.OtlpProtos do
       File.mkdir_p!(output)
       File.mkdir_p!(Path.dirname(manifest))
 
-      Enum.each(Enum.filter(sources, &String.ends_with?(&1, "_service.proto")), fn source ->
-        options = [
-          :binary,
-          :maps,
-          :use_packages,
-          :strings_as_binaries,
-          :type_specs,
-          {:erlc_compile_options, ~c"debug_info"},
-          {:module_name_prefix, ~c"otlp_shipper_"},
-          {:i, String.to_charlist(root)}
-        ]
-
-        case :gpb_compile.file(String.to_charlist(source), options) do
-          {:ok, module, binary} ->
-            path = beam_path(output, module)
-            File.write!(path, binary)
-            {:module, ^module} = :code.load_binary(module, String.to_charlist(path), binary)
-
-          error ->
-            Mix.raise("OTLP protobuf generation failed: #{inspect(error)}")
-        end
-      end)
+      sources
+      |> Enum.filter(&String.ends_with?(&1, "_service.proto"))
+      |> Enum.each(&compile_service(&1, root, output))
 
       File.write!(manifest, digest)
       {:ok, []}
@@ -64,6 +45,29 @@ defmodule Mix.Tasks.Compile.OtlpProtos do
     Enum.each(manifests(), &File.rm/1)
     Enum.each(@modules, &File.rm(beam_path(Mix.Project.compile_path(), &1)))
     :ok
+  end
+
+  defp compile_service(source, root, output) do
+    options = [
+      :binary,
+      :maps,
+      :use_packages,
+      :strings_as_binaries,
+      :type_specs,
+      {:erlc_compile_options, ~c"debug_info"},
+      {:module_name_prefix, ~c"otlp_shipper_"},
+      {:i, String.to_charlist(root)}
+    ]
+
+    case :gpb_compile.file(String.to_charlist(source), options) do
+      {:ok, module, binary} ->
+        path = beam_path(output, module)
+        File.write!(path, binary)
+        {:module, ^module} = :code.load_binary(module, String.to_charlist(path), binary)
+
+      error ->
+        Mix.raise("OTLP protobuf generation failed: #{inspect(error)}")
+    end
   end
 
   defp beam_path(output, module), do: Path.join(output, "#{module}.beam")

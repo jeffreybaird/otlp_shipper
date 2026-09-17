@@ -137,11 +137,15 @@ mix deps.get
 mix format --check-formatted
 mix compile --warnings-as-errors
 mix test
+MIX_ENV=test mix cucumber
+mix credo --strict
 ```
 
 Also run `mix dialyzer` before code commits. CI runs `mix hex.audit`,
-`mix docs --warnings-as-errors`, and `mix hex.build` as well. There is no custom
-verification alias or Credo setup. Do not claim unavailable or skipped checks passed.
+`mix docs --warnings-as-errors`, and `mix hex.build` as well. Strict Credo analysis
+is required before code commits and runs in both CI toolchain jobs before package
+checks. There is no custom verification alias. Do not claim unavailable or skipped
+checks passed.
 Before handoff, run relevant checks and report failures, skipped checks, and gaps.
 Documentation-only edits need link/content checks, not new behavior tests.
 

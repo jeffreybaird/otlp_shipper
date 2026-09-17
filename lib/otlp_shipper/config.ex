@@ -115,22 +115,11 @@ defmodule OtlpShipper.Config do
   end
 
   defp resolve_endpoint(signal, opts, env) do
-    signal_endpoint =
-      nonempty(env["OTEL_EXPORTER_OTLP_#{String.upcase(to_string(signal))}_ENDPOINT"])
-
-    {url, append?} =
-      cond do
-        Keyword.has_key?(opts, :endpoint) -> {opts[:endpoint], false}
-        Keyword.has_key?(opts, :base_endpoint) -> {opts[:base_endpoint], true}
-        signal_endpoint != nil -> {signal_endpoint, false}
-        true -> {nonempty(env["OTEL_EXPORTER_OTLP_ENDPOINT"]) || "http://localhost:4318", true}
-      end
+    {url, append?} = endpoint_setting(signal, opts, env)
 
     with true <- is_binary(url),
          {:ok, uri} <- URI.new(url),
-         true <- uri.scheme in ["http", "https"] and is_binary(uri.host) and uri.host != "",
-         true <- is_integer(uri.port) and uri.port in 1..65535,
-         true <- is_nil(uri.userinfo) and is_nil(uri.fragment) do
+         true <- valid_endpoint?(uri) do
       path =
         if append?,
           do: String.trim_trailing(uri.path || "", "/") <> "/v1/#{signal}",
@@ -139,6 +128,24 @@ defmodule OtlpShipper.Config do
       {:ok, URI.to_string(%{uri | path: path})}
     else
       _ -> {:error, :invalid_endpoint}
+    end
+  end
+
+  defp valid_endpoint?(uri) do
+    uri.scheme in ["http", "https"] and is_binary(uri.host) and uri.host != "" and
+      is_integer(uri.port) and uri.port in 1..65_535 and
+      is_nil(uri.userinfo) and is_nil(uri.fragment)
+  end
+
+  defp endpoint_setting(signal, opts, env) do
+    signal_endpoint =
+      nonempty(env["OTEL_EXPORTER_OTLP_#{String.upcase(to_string(signal))}_ENDPOINT"])
+
+    cond do
+      Keyword.has_key?(opts, :endpoint) -> {opts[:endpoint], false}
+      Keyword.has_key?(opts, :base_endpoint) -> {opts[:base_endpoint], true}
+      signal_endpoint != nil -> {signal_endpoint, false}
+      true -> {nonempty(env["OTEL_EXPORTER_OTLP_ENDPOINT"]) || "http://localhost:4318", true}
     end
   end
 
@@ -155,18 +162,16 @@ defmodule OtlpShipper.Config do
          true <- Enum.all?(headers, &valid_header?/1) do
       headers = Enum.map(headers, fn {key, value} -> {String.downcase(key), value} end)
 
-      if Enum.any?(headers, fn {key, _} ->
-           key in [
-             "host",
-             "content-length",
-             "content-type",
-             "content-encoding",
-             "transfer-encoding"
-           ]
-         end), do: {:error, :reserved_header}, else: {:ok, headers}
+      if Enum.any?(headers, &reserved_header?/1),
+        do: {:error, :reserved_header},
+        else: {:ok, headers}
     else
       _ -> {:error, :invalid_headers}
     end
+  end
+
+  defp reserved_header?({key, _}) do
+    key in ["host", "content-length", "content-type", "content-encoding", "transfer-encoding"]
   end
 
   defp valid_header?({key, value}) when is_binary(key) and is_binary(value),
@@ -195,8 +200,7 @@ defmodule OtlpShipper.Config do
       invalid != nil ->
         {:error, :invalid_option, invalid}
 
-      not (is_integer(values.max_retries) and values.max_retries >= 0 and
-               values.max_retries <= 100) ->
+      not valid_max_retries?(values.max_retries) ->
         {:error, :invalid_option, :max_retries}
 
       values.max_batch > values.max_queue ->
@@ -212,6 +216,8 @@ defmodule OtlpShipper.Config do
         {:ok, values}
     end
   end
+
+  defp valid_max_retries?(value), do: is_integer(value) and value >= 0 and value <= 100
 
   defp parse_integer(value) when is_binary(value) do
     case Integer.parse(value) do

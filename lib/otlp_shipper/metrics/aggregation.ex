@@ -136,5 +136,5 @@ defmodule OtlpShipper.Metrics.Aggregation do
     do: value >= -9_223_372_036_854_775_808 and value <= 9_223_372_036_854_775_807
 
   defp valid_number?(value) when is_float(value),
-    do: value == value and abs(value) <= 1.7976931348623157e308
+    do: abs(value) <= 1.797_693_134_862_315_7e308
 end

@@ -8,13 +8,17 @@ mix format --check-formatted
 mix compile --warnings-as-errors
 mix test
 MIX_ENV=test mix cucumber
+mix credo --strict
 ```
 
 CI also runs `mix dialyzer`, `mix hex.audit`, `mix docs --warnings-as-errors`, and
 `scripts/package_smoke.sh` (Hex build plus a fresh consumer release). Run the full code-commit gate through Dialyzer before committing. For focused iteration use
 `mix test test/otlp_shipper_test.exs`; use `mix test --cover` for coverage inspection.
 No browser, database, external collector, or production credentials are needed.
-The suite starts an isolated loopback collector.
+The suite starts an isolated loopback collector. Strict Credo analysis is required
+before code commits and runs in both CI toolchain jobs before package checks.
+Resolve findings in the code; do not disable checks, add exclusions, or mask failures
+to make the gate pass.
 
 ## Test layers
 
@@ -94,7 +98,8 @@ Before release, exercise the oldest supported Elixir/OTP combination and the cur
 supported combination, plus relevant dependency bounds. Record tested versions and
 any gaps. PLAN.md requires Dialyzer and a clean `mix hex.audit` for release. Both are now
 configured in CI.
-Credo remains optional. There is no Marquee verification alias here.
+`mix credo --strict` is also required for release readiness. There is no Marquee
+verification alias here.
 
 Follow [submission/build.md](submission/build.md) for the package consumer check.
 A source checkout passing tests does not prove an archive contains everything a

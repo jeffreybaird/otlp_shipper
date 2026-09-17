@@ -42,9 +42,8 @@ defmodule OtlpShipper.Conformance do
                  "mix",
                  ["run", "--no-compile", "--no-start", "#{priv}/conformance/emit.exs", endpoint],
                  env: clean_environment(System.get_env())
-               ),
-             :ok <- await_output(command, name, &(verify(&1) == :ok)) do
-          :ok
+               ) do
+          await_output(command, name, &(verify(&1) == :ok))
         end
       after
         # Cleanup is also attempted when a command raises or the fixture fails.

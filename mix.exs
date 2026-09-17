@@ -42,6 +42,7 @@ defmodule OtlpShipper.MixProject do
       {:cucumberex, "~> 0.2.1", only: :test},
       {:opentelemetry, "~> 1.7", only: :test},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.38", only: :dev, runtime: false}
     ]
   end
