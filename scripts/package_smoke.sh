@@ -69,6 +69,20 @@ defmodule ReleaseLogCollector do
     hd(hd(hd(decoded.resource_metrics).scope_metrics).metrics)
   end
 
+  # Phase 5 proves the protocol core without claiming SDK adapter integration.
+  def receive_trace(listener) do
+    {:ok, socket} = :gen_tcp.accept(listener, 5000)
+    {:ok, {:http_request, :POST, {:abs_path, "/v1/traces"}, _}} = :gen_tcp.recv(socket, 0, 5000)
+    length = content_length(socket, nil)
+    :ok = :inet.setopts(socket, packet: :raw)
+    {:ok, body} = :gen_tcp.recv(socket, length, 5000)
+    decoded = :otlp_shipper_trace_service.decode_msg(body,
+      :"opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest")
+    :ok = :gen_tcp.send(socket, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+    :gen_tcp.close(socket)
+    hd(decoded.resource_spans)
+  end
+
   defp content_length(socket, length) do
     case :gen_tcp.recv(socket, 0, 5000) do
       {:ok, :http_eoh} -> length
@@ -99,8 +113,30 @@ metric = Telemetry.Metrics.counter("release.events.count")
   data_points: [%{value: {:as_int, 1}}]}}} = Task.await(collector, 5000)
 Supervisor.stop(reporter)
 Supervisor.stop(supervisor)
+collector = Task.async(fn -> ReleaseLogCollector.receive_trace(listener) end)
+{:ok, trace_config} = OtlpShipper.Config.transport(:traces,
+  endpoint: "http://127.0.0.1:#{port}/v1/traces")
+{:ok, pool} = Finch.start_link(name: TraceProtocolSmokePool)
+span = %{trace_id: 1, span_id: 2, parent_span_id: nil, parent_span_is_remote: nil,
+  trace_flags: 1, tracestate: [], name: "release trace core", kind: :internal,
+  start_time: 0, end_time: System.convert_time_unit(1, :millisecond, :native),
+  attributes: %{}, dropped_attributes_count: 0, events: [], dropped_events_count: 0,
+  links: [], dropped_links_count: 0, status: %{code: :unset, message: ""},
+  scope: %{name: "release-consumer", version: "1", schema_url: ""}}
+resource = %{attributes: %{"service.name" => "trace-core-smoke"}, schema_url: "",
+  dropped_attributes_count: 0}
+offset = System.convert_time_unit(1_700_000_000, :second, :native)
+{:ok, %{accepted: 1, rejected: 0, invalid: 0, failed: 0, unsent: 0, requests: 1}} =
+  OtlpShipper.TraceBatch.export(trace_config, TraceProtocolSmokePool, [span], resource, offset, 1)
+%{scope_spans: [%{scope: %{name: "release-consumer"},
+  spans: [%{trace_id: <<1::128>>, span_id: <<2::64>>, name: "release trace core"}]}]} =
+  Task.await(collector, 5000)
+:non_existing = :code.which(:otel_exporter_traces)
+:non_existing = :code.which(:opentelemetry_exporter)
+:non_existing = :code.which(:gpb_compile)
+Supervisor.stop(pool)
 :gen_tcp.close(listener)
-IO.puts("Package release smoke passed: HTTP logs and metrics without runtime gpb (tracing API presence checked)")
+IO.puts("Package release smoke passed: HTTP logs, metrics, and trace core without SDK/exporter/runtime gpb (optional API checked)")
 ELIXIR
 mix deps.get
 MIX_ENV=prod mix compile --warnings-as-errors

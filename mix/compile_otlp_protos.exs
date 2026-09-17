@@ -2,7 +2,11 @@ defmodule Mix.Tasks.Compile.OtlpProtos do
   @moduledoc false
   use Mix.Task.Compiler
 
-  @modules [:otlp_shipper_logs_service, :otlp_shipper_metrics_service]
+  @modules [
+    :otlp_shipper_logs_service,
+    :otlp_shipper_metrics_service,
+    :otlp_shipper_trace_service
+  ]
 
   @impl true
   def run(_args) do

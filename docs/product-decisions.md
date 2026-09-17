@@ -228,6 +228,30 @@ are not sampled and ordinary sampling resumes. The package must not install that
 sampler into consumer configuration automatically. Supported instrumentation scope
 and remaining implementation obligations are explicit in the decision record.
 
-Phase 4 review/merge remains pending. No production trace exporter or trace wire
-encoding is implemented by these probes. Version 0.1.1 remains logs/metrics only;
-Phase 5 begins only after this phase merges.
+Phase 4 merged in PR #16 on September 17, 2026. Its probes implement no production
+SDK exporter. Version 0.1.1 remains logs/metrics only.
+
+
+## Phase 5 protocol core — unreleased
+
+The trace core accepts normalized maps independently of SDK record definitions.
+`TraceRecord` preserves supported fields and rejects malformed or oversized spans;
+`TraceEncoder` groups original scope name, version, and schema under the authoritative
+resource. Vendored v1.5.0 trace schemas generate a package-owned codec at build time.
+No dependency change or canonical-exporter codec reuse is needed.
+
+Trace-only `Config.transport/3` resolves request options without creating a resource
+or borrowing log queue settings. `TraceBatch.export/6` consumes a finite enumerable
+with its declared count, constructs count/byte-bounded requests, and returns accepted,
+rejected, invalid, failed, and unsent counts. One linked worker bounds conversion,
+enumeration, encoding, HTTP, retries, and diagnostics under a shared deadline.
+A parent-owned ETS snapshot commits outcomes before synchronous telemetry callbacks.
+Cancellation may omit diagnostics; it cannot erase an already committed acceptance.
+Failed means submitted without confirmed acceptance, not proof of remote failure.
+
+The core does not add a span queue. Accepted chunks are never replayed after later
+failure. A late source-count mismatch retains prior delivery and returns an error.
+Production SDK callbacks, lifecycle ownership, optional SDK compilation, and the
+approved sampler wrapper remain Phase 6. The packaged-consumer smoke exercises
+raw trace-core HTTP delivery without the SDK, canonical exporter, or runtime gpb;
+it does not replace Phase 7's real-instrumentation migration proof.

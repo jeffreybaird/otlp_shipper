@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Add the trace protocol core: vendored generated schemas, transport-only trace
+  configuration, strict normalized span conversion, resource/scope-preserving
+  envelopes, and bounded chunk export under one shared deadline.
+- Decode trace partial responses and preserve span accounting across retries,
+  failures, and deadline cancellation. Extend collector and release-consumer proof
+  while retaining logs/metrics contracts and optional tracing dependencies.
+- SDK callback integration and the production sampling wrapper remain Phase 6;
+  this change does not yet replace an application's configured tracing exporter.
+
 ## 0.1.1 — 2026-09-13
 
 - Widen the Finch requirement from `~> 0.20.0` to `~> 0.20` (`>= 0.20.0` and
