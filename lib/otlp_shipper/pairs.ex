@@ -7,24 +7,26 @@ defmodule OtlpShipper.Pairs do
   def parse(value) when is_binary(value) do
     value
     |> String.split(",", trim: true)
-    |> Enum.reduce_while({:ok, %{}}, fn part, {:ok, acc} ->
-      case String.split(part, "=", parts: 2) do
-        [key, value] ->
-          with {:ok, key} <- decode(String.trim(key)),
-               {:ok, value} <- decode(String.trim(value)),
-               false <- key == "" do
-            {:cont, {:ok, Map.put(acc, key, value)}}
-          else
-            _ -> {:halt, {:error, :invalid_pairs}}
-          end
-
-        _ ->
-          {:halt, {:error, :invalid_pairs}}
-      end
-    end)
+    |> Enum.reduce_while({:ok, %{}}, &parse_pair/2)
   end
 
   def parse(_), do: {:error, :invalid_pairs}
+
+  defp parse_pair(part, {:ok, acc}) do
+    case String.split(part, "=", parts: 2) do
+      [key, value] ->
+        with {:ok, key} <- decode(String.trim(key)),
+             {:ok, value} <- decode(String.trim(value)),
+             false <- key == "" do
+          {:cont, {:ok, Map.put(acc, key, value)}}
+        else
+          _ -> {:halt, {:error, :invalid_pairs}}
+        end
+
+      _ ->
+        {:halt, {:error, :invalid_pairs}}
+    end
+  end
 
   defp decode(value) do
     if Regex.match?(~r/%(?![0-9a-fA-F]{2})/, value) do
