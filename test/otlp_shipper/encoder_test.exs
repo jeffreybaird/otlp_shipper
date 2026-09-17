@@ -68,7 +68,7 @@ defmodule OtlpShipper.EncoderTest do
   end
 
   test "rejects invalid values without exposing data" do
-    assert {:error, :invalid_signal} = Encoder.encode(:traces, [], %{})
+    assert {:error, :invalid_signal} = Encoder.encode(:profiles, [], %{})
     assert {:error, :invalid_payload} = Encoder.encode(:logs, nil, %{})
     assert {:error, :invalid_payload} = Encoder.encode(:logs, [%{severity_number: "secret"}], %{})
   end

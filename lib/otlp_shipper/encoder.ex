@@ -2,9 +2,11 @@ defmodule OtlpShipper.Encoder do
   @moduledoc "Constructs OTLP export envelopes using generated protobuf encoders."
 
   @doc """
-  Encodes log records or metric messages under a single resource and scope.
+  Encodes log records, metric messages, or converted trace records.
 
-  Inputs are OTLP message maps, not raw Logger events or metric definitions.
+  Logs and metrics use OTLP message maps under one scope. Traces use
+  `TraceRecord.convert/2` results and a native authoritative resource passed to
+  `TraceEncoder.encode/2`. Inputs are not raw Logger events or metric definitions.
   Malformed protobuf values return a tagged error without exposing the payload.
 
       iex> {:ok, resource} = OtlpShipper.Resource.new(service_name: "checkout")
@@ -13,8 +15,11 @@ defmodule OtlpShipper.Encoder do
       iex> is_binary(bytes)
       true
   """
-  @spec encode(:logs | :metrics, [map()], map()) ::
-          {:ok, binary()} | {:error, :invalid_payload | :invalid_signal}
+  @spec encode(:logs | :metrics | :traces, [map()], map()) ::
+          {:ok, binary()}
+          | {:error, :invalid_payload | :invalid_signal | :invalid_resource | :batch_too_large}
+  def encode(:traces, items, resource), do: OtlpShipper.TraceEncoder.encode(items, resource)
+
   def encode(signal, items, resource)
       when signal in [:logs, :metrics] and is_list(items) and is_map(resource) do
     scope = %{name: "otlp_shipper", version: "0.1.0"}

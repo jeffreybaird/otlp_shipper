@@ -40,6 +40,11 @@ defmodule OtlpShipper.TestCollector do
     do:
       {:otlp_shipper_metrics_service,
        :"opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceRequest"}
+
+  defp request_type("traces"),
+    do:
+      {:otlp_shipper_trace_service,
+       :"opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest"}
 end
 
 defmodule OtlpShipper.CollectorCase do

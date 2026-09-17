@@ -230,3 +230,19 @@ Hex installation check.
 See [0.1.1 release verification](submission/release-0.1.1.md) for public Hex
 installation, the widened Finch requirement, and compatibility smoke results.
 Earlier phase and 0.1.0 records retain their original versions and dates.
+
+
+## Phase 5 trace protocol checks
+
+`docs/features/trace-protocol.feature` executes TPC-01 through TPC-07 through
+CucumberEx. New trace ExUnit tests cover normalized conversion, exact generated
+byte limits, original resources/scopes, trace-only configuration, real HTTP and
+partial responses, chunk outcomes, shared deadlines, blocked enumerables, and
+blocked telemetry callbacks. Trace doctests cover the pure public entry points.
+
+All three package-smoke modes now also deliver a normalized span through the trace
+core from a production release, with the SDK, canonical exporter, and runtime gpb
+absent. The optional API checks retain their existing mode-specific expectations.
+This proves protocol packaging, not the SDK adapter or instrumentation migration;
+those remain Phases 6–7. Current run results are recorded in the
+[Phase 5 work record](workflows/phase-5-trace-protocol.md).

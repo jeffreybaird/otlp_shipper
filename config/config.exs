@@ -5,7 +5,11 @@ if config_env() == :test do
   config :opentelemetry, traces_exporter: :none
 
   config :cucumberex, :config,
-    paths: ["docs/features/cucumberex.feature", "docs/features/trace-compatibility.feature"],
+    paths: [
+      "docs/features/cucumberex.feature",
+      "docs/features/trace-compatibility.feature",
+      "docs/features/trace-protocol.feature"
+    ],
     strict: true
 end
 
