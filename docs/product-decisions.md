@@ -255,3 +255,36 @@ Production SDK callbacks, lifecycle ownership, optional SDK compilation, and the
 approved sampler wrapper remain Phase 6. The packaged-consumer smoke exercises
 raw trace-core HTTP delivery without the SDK, canonical exporter, or runtime gpb;
 it does not replace Phase 7's real-instrumentation migration proof.
+
+
+## Phase 6 SDK integration — unreleased
+
+The optional guarded exporter targets SDK 1.7.0 / API 1.5.0 and rejects unverified
+version pairs at initialization. The SDK dependency is now optional instead of
+test-only, providing the consumer compilation-order edge established in Phase 4.
+Logs/metrics consumers still do not install it. Adding the SDK later requires
+recompilation; the package does not hot-enable the adapter.
+
+The consumer supplies a named Finch pool. `TraceExporter.pool_child_spec/1` uses the
+existing bounded restart boundary; the consumer places it before the SDK provider
+in a `:rest_for_one` tree. Export and shutdown own neither the pool nor another
+span queue. A lazy ETS stream normalizes one source record at a time inside the
+callback's shared deadline. ETS copies that source record before validation;
+subsequent normalized allocation is bounded, but SDK retention is not.
+
+The approved sampler wrapper delegates ordinary sampling and drops spans marked
+inside actual shipper HTTP workers, including log/metric requests. It restores the
+previous context and never installs itself globally. The supported feedback proof
+uses synchronous Finch instrumentation 0.2.0; cross-process instrumentation is not
+implicitly covered. SDK resources/scopes and exposed dropped counts remain
+preserved. Scope attributes and link flags absent from these SDK records cannot be
+exported. Original event/link order is restored from SDK storage order.
+
+The SDK timeout should exceed the exporter budget by at least 2,000 ms. Flush
+return remains asynchronous, and SDK termination may omit exporter shutdown.
+Partial/invalid or already-partly-accepted batches map to permanent failure;
+transient exhaustion before any confirmed acceptance maps to retryable failure,
+without implying SDK requeue. Invalid-init diagnostics have a 100 ms internal
+budget, so a blocked subscriber cannot hang provider startup. Real Collector trace
+conformance and the complete replacement/migration proof remain Phase 7. Hex 0.1.1
+still ships logs and metrics only; no new release has been published.

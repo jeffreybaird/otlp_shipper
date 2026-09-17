@@ -2,7 +2,10 @@
 
 Status: Phase 4 merged in PR #16 on September 17, 2026, with all CI checks passing. This record
 does not make trace export available in version 0.1.1. Implementation belongs to
-Phases 5–7.
+Phases 5–7. Phase 5 has since merged, and the unreleased Phase 6 implementation is
+tracked in the [SDK work record](../workflows/phase-6-trace-sdk.md). The proposed
+interfaces below preserve this Phase 4 decision history; README describes current
+development APIs.
 
 ## Supported boundary
 

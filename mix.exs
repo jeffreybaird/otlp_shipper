@@ -40,7 +40,7 @@ defmodule OtlpShipper.MixProject do
       {:gpb, "~> 4.21 and >= 4.21.7", runtime: false},
       {:bandit, "~> 1.8", only: :test},
       {:cucumberex, "~> 0.2.1", only: :test},
-      {:opentelemetry, "~> 1.7", only: :test},
+      {:opentelemetry, "~> 1.7", optional: true},
       {:opentelemetry_finch, "== 0.2.0", only: :test},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
