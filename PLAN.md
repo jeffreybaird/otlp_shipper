@@ -280,7 +280,7 @@ alternative.
 | 1 | Supervised Logger handler | Complete |
 | 2 | Telemetry.Metrics reporter | Complete |
 | 3 | Conformance, docs, release | Complete; 0.1.1 published |
-| 4 | SDK compatibility probe and approved trace contracts | Next; planning PR must merge first |
+| 4 | SDK compatibility probe and approved trace contracts | In progress; [decision record](docs/decisions/trace-compatibility.md), review/merge pending |
 | 5 | Trace schemas, configuration, encoding, and HTTP conformance | After Phase 4 merges |
 | 6 | SDK exporter, bounded lifecycle, correlation | After Phase 5 merges |
 | 7 | Replacement consumer, real Collector, migration/release preparation | After Phase 6 merges |

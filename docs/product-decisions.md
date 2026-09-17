@@ -211,3 +211,23 @@ Each phase waits for its predecessor's merge. A full tracing SDK replacement,
 gRPC, durable queues, metric exemplars, and global auto-configuration are deferred.
 The current release remains 0.1.1 with logs/metrics only; a candidate tracing release
 is a future readiness decision, not publication authorization.
+
+
+## Phase 4 compatibility investigation — September 17, 2026
+
+The [trace compatibility decision record](decisions/trace-compatibility.md) defines
+the initial SDK 1.7.0/API 1.5.0 target and the proposed Phase 5–6 boundaries.
+Test-only probes exercise real SDK batches, ownership, cancellation, flush, retry,
+queue admission, restart, and record fidelity. A fresh consumer prototype proves
+optional-SDK compilation with a dependency-ordering edge; the real package's SDK
+dependency remains test-only until its guarded adapter is implemented.
+
+The owner approved a consumer-configured delegating sampler wrapper to prevent
+exporter HTTP feedback. Real Finch instrumentation probes verify marked requests
+are not sampled and ordinary sampling resumes. The package must not install that
+sampler into consumer configuration automatically. Supported instrumentation scope
+and remaining implementation obligations are explicit in the decision record.
+
+Phase 4 review/merge remains pending. No production trace exporter or trace wire
+encoding is implemented by these probes. Version 0.1.1 remains logs/metrics only;
+Phase 5 begins only after this phase merges.
