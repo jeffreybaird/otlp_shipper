@@ -2,7 +2,8 @@
 
 This guide summarizes [../PLAN.md](../PLAN.md). The shared core, Logger adapter,
 and metrics reporter are implemented, including Phase 3 conformance/release work.
-Trace export is planned in Phases 4–7 and is not part of the current 0.1.1 release.
+The unreleased Phase 5 trace protocol core is implemented; SDK integration remains
+Phase 6. Tracing is not part of the current 0.1.1 release.
 Confirmed: `otlp_shipper`, module root `OtlpShipper`, public Hex, Finch directly.
 
 ## One package, independent signals
@@ -22,6 +23,8 @@ another shipper queue for spans.
 | Buffer | Logs/metrics batching, periodic/size flush, bounded retention, shutdown flush |
 | LogHandler | Logger event conversion, severity, correlation, metadata filtering and truncation |
 | MetricsReporter | Telemetry.Metrics attachment, tag/unit conversion, interval aggregation |
+| TraceRecord / TraceEncoder | SDK-independent conversion and generated, resource/scope-preserving request encoding |
+| TraceBatch | Bounded synchronous trace requests under one conversion/HTTP/retry deadline |
 | TraceExporter (planned) | SDK callbacks, faithful span/resource/scope conversion, synchronous bounded HTTP export in the SDK worker |
 
 Separate environment reads from pure configuration resolution for deterministic
@@ -123,7 +126,17 @@ have explicit supervised ownership and cleanup independent of assumptions about
 SDK shutdown callbacks. Prevent exporter HTTP instrumentation from feeding traces
 back into itself. SDK queue limits and shipper request limits are separate contracts.
 
-Phase 4 must prove optional-SDK compilation, record compatibility, startup order,
-cleanup, callback result mapping, and numeric limits before implementation.
-Phases 5–7 build protocol support, integrate the SDK, and prove a packaged three-signal
-consumer with the canonical exporter absent. See PLAN.md §§12–16 for acceptance IDs.
+Phase 4 proved the compatibility contracts in the
+[decision record](decisions/trace-compatibility.md). The Phase 5 core uses normalized
+maps and an explicit native clock offset, with no SDK record imports. Trace-only
+configuration leaves resource ownership with the caller. The batch worker constructs
+one bounded request at a time and keeps coherent outcome counters in a parent-owned
+ETS table. Transport commits each result there before emitting diagnostics, so a
+blocked telemetry subscriber cannot erase confirmed delivery when the worker is killed.
+Forced cancellation can omit final diagnostics; returned counters retain committed
+outcomes. The caller supplies the source count to account for an unvisited suffix
+without evaluating a blocked enumerable.
+
+Phase 6 integrates SDK callbacks and the approved consumer-configured sampler.
+Phase 7 proves a packaged three-signal consumer with real instrumentation and the
+canonical exporter absent. See PLAN.md §§12–16 for acceptance IDs.

@@ -378,3 +378,38 @@ Version 0.1.1 was published on September 13, 2026. See
 `docs/submission/release-0.1.1.md` for published-artifact verification and
 `docs/submission/readiness.md` for future release guidance. Building a package
 does not publish it; further uploads require release authorization.
+
+
+## Unreleased trace protocol core
+
+The development branch adds low-level OTLP trace conversion, encoding, and bounded
+HTTP export. These APIs are not in Hex 0.1.1 and do not yet provide an SDK exporter.
+Keep the canonical SDK/API and instrumentation; the SDK callback adapter and
+consumer-configured sampling wrapper are Phase 6 work.
+
+`OtlpShipper.Config.transport/3` resolves trace transport settings without creating a
+resource. It rejects service/resource identity, queue, flush, and shutdown options;
+the supplied resource remains authoritative. `OtlpShipper.Config.new/3` continues to serve only
+logs and metrics. Trace endpoints, headers, compression, protocol, and timeout use
+explicit options, then trace-specific OTEL variables, then generic OTEL variables.
+
+`OtlpShipper.TraceRecord.convert/3` validates normalized span maps without importing
+SDK records. It preserves IDs, timestamps, flags, typed attributes, events, links,
+and dropped counts. `OtlpShipper.Encoder.encode/3` accepts `:traces` and preserves
+resource and instrumentation-scope identities. Neither operation stringifies invalid
+attribute values or truncates resource/scope identity to make a request fit.
+
+`OtlpShipper.TraceBatch.export/6` consumes a finite enumerable plus its exact declared
+count, supplied by its caller. One deadline covers enumeration, conversion, encoding,
+HTTP, retries, and synchronous diagnostic handlers. Defaults are 512 spans per
+request, 65,536 protobuf bytes per span, 1,048,576 uncompressed bytes per complete
+request, 65,536 response bytes, 10 seconds total, and three retries per request.
+These request limits do not bound an SDK's retained queue.
+
+Returned counters distinguish confirmed acceptance, rejection, invalid input,
+submitted-but-unconfirmed failures, and unsent spans. An accepted chunk is never
+replayed after another fails. A count mismatch may be discovered after earlier
+chunks have been delivered; it cannot roll them back. A timeout does not prove
+remote non-delivery. Diagnostic handlers execute within the deadline; forced
+cancellation can omit their final events, while returned counters retain committed
+outcomes and never recount accepted chunks as unsent.
