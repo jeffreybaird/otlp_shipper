@@ -11,7 +11,10 @@ distinguishes those plans from implemented behavior; examples in these instructi
 This is an Elixir library distributed as a Hex package. Use Mix, ExUnit, doctests,
 and the repository's formatter. `mix.exs` declares `:otlp_shipper`, version
 `0.1.1`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
-The planned product ships logs and metrics over OTLP/HTTP; traces are out of scope.
+The planned product ships logs, metrics, and traces over OTLP/HTTP. Logs and metrics
+are implemented; SDK-compatible trace export is planned in PLAN.md Phases 4–7.
+Retain the OTel API, tracing SDK, and existing instrumentation; replacing them is
+outside the tracing expansion. Do not describe planned trace support as shipped.
 The shared core, supervised Logger handling, and metrics reporter are implemented
 through Phase 3, including opt-in real Collector conformance and local release
 preparation. Version 0.1.1 was published to public Hex on September 13, 2026.
@@ -29,7 +32,9 @@ Phoenix, Ecto, tenant, billing, deployment, or browser-test infrastructure.
 The primary agent owns scope, public contracts, architecture, integration, and
 final verification. Establish the package's purpose and acceptance criteria
 before implementing consequential behavior. Follow the plan in order: Phase 0 core
-and fake collector, Phase 1 logs, Phase 2 metrics, Phase 3 conformance/docs/release.
+and fake collector, Phase 1 logs, Phase 2 metrics, Phase 3 conformance/docs/release
+(complete), then Phase 4 trace compatibility/contracts, Phase 5 trace protocol/core,
+Phase 6 SDK adapter, and Phase 7 replacement proof/migration/release preparation.
 Each phase gets a branch and PR; wait for its merge before beginning the next. Make routine implementation choices
 autonomously; ask when an unresolved choice changes the public contract.
 

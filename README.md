@@ -208,10 +208,11 @@ No tracing or Logger process configuration is changed by this handler.
 
 ## When to use another exporter
 
-Trace export belongs to the OpenTelemetry SDK/exporter. Unsupported metric types and units are rejected at startup. Before adopting the logs handler, check whether
+For version 0.1.1, use the OpenTelemetry SDK/exporter for traces. Unsupported metric
+types and units are rejected at startup. Before adopting the logs handler, compare
 [`opentelemetry_experimental`](https://hex.pm/packages/opentelemetry_experimental)
-has released working OTLP log support; replacing this temporary gap is preferable
-to maintaining two log exporters. The September 12, 2026 release-preparation recheck still found 0.5.1, the
+with this package's Logger integration and delivery contracts; avoid exporting each
+event through both. The September 12, 2026 release-preparation recheck still found 0.5.1, the
 release assessed during Phase 1. Recheck before adopting or publishing; this
 package does not claim that every newer upstream development snapshot is broken.
 Do not use this package when durable or exactly-once log delivery is required.
@@ -226,7 +227,9 @@ Do not use this package when durable or exactly-once log delivery is required.
 
 The core accepts OTLP message maps. `OtlpShipper.LogHandler` converts Logger events;
 `OtlpShipper.MetricsReporter` aggregates metric definitions. Both signals use the core independently.
-Trace export is outside this package's scope.
+Version 0.1.1 does not export traces. An SDK-compatible trace exporter is planned
+in the repository's `PLAN.md`; it is not yet implemented. The planned adapter keeps
+the existing tracing API, SDK, and instrumentation.
 
 ## Core example
 
