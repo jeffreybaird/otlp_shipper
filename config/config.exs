@@ -8,7 +8,8 @@ if config_env() == :test do
     paths: [
       "docs/features/cucumberex.feature",
       "docs/features/trace-compatibility.feature",
-      "docs/features/trace-protocol.feature"
+      "docs/features/trace-protocol.feature",
+      "docs/features/trace-sdk.feature"
     ],
     strict: true
 end

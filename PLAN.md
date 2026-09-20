@@ -13,9 +13,9 @@ metrics shipped in 0.1.0; 0.1.1 widened Finch compatibility. Phases 0–3 are co
 [release record](docs/submission/release-0.1.1.md) describe implemented behavior.
 
 The owner has expanded the planned scope to **SDK-compatible trace export**.
-Phases 4–7 below are planned, not implemented. The current release still rejects
-`:traces` configuration. This document update does not implement an exporter,
-change dependencies, publish a release, or authorize replacing the tracing SDK.
+Phases 4–5 have merged, Phase 6 implements the SDK adapter on its phase branch,
+and Phase 7 remains planned. The public 0.1.1 release still provides logs/metrics
+only. Development does not publish a release or authorize replacing the tracing SDK.
 
 Confirmed decisions:
 
@@ -281,8 +281,8 @@ alternative.
 | 2 | Telemetry.Metrics reporter | Complete |
 | 3 | Conformance, docs, release | Complete; 0.1.1 published |
 | 4 | SDK compatibility probe and approved trace contracts | Complete; [decision record](docs/decisions/trace-compatibility.md), PR #16 merged |
-| 5 | Trace schemas, configuration, encoding, and HTTP conformance | In progress; implementation and verification in this phase |
-| 6 | SDK exporter, bounded lifecycle, correlation | After Phase 5 merges |
+| 5 | Trace schemas, configuration, encoding, and HTTP conformance | Complete; PR #17 merged |
+| 6 | SDK exporter, bounded lifecycle, correlation | In progress |
 | 7 | Replacement consumer, real Collector, migration/release preparation | After Phase 6 merges |
 
 Each phase is a focused branch and PR. Do not start its successor until it merges.

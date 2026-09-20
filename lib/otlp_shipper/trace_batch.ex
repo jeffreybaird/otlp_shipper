@@ -39,6 +39,36 @@ defmodule OtlpShipper.TraceBatch do
   def export(%Config{signal: :traces} = config, pool, spans, resource, offset, total_count)
       when is_integer(total_count) and total_count >= 0 do
     deadline = System.monotonic_time(:millisecond) + config.timeout
+    export_until(config, pool, spans, resource, offset, total_count, deadline)
+  end
+
+  def export(_, _, _, _, _, count),
+    do:
+      {:error, :invalid_batch, summary(if(is_integer(count) and count >= 0, do: count, else: 0))}
+
+  @doc false
+  @spec export_until(
+          Config.t(),
+          atom(),
+          Enumerable.t(),
+          map() | (-> term()),
+          integer(),
+          non_neg_integer(),
+          integer()
+        ) ::
+          {:ok, summary()} | {:error, term(), summary()}
+  # The SDK adapter starts this deadline before reading or normalizing any record.
+  def export_until(
+        %Config{signal: :traces} = config,
+        pool,
+        spans,
+        resource,
+        offset,
+        total_count,
+        deadline
+      )
+      when is_integer(total_count) and total_count >= 0 and is_integer(deadline) do
+    deadline = min(deadline, System.monotonic_time(:millisecond) + config.timeout)
     ledger = :ets.new(__MODULE__, [:set, :public])
     publish(ledger, summary(total_count))
 
@@ -59,7 +89,7 @@ defmodule OtlpShipper.TraceBatch do
     end
   end
 
-  def export(_, _, _, _, _, count),
+  def export_until(_, _, _, _, _, count, _),
     do:
       {:error, :invalid_batch, summary(if(is_integer(count) and count >= 0, do: count, else: 0))}
 
@@ -72,6 +102,8 @@ defmodule OtlpShipper.TraceBatch do
 
   # Every conversion, encode, request and synchronous diagnostic runs in this worker.
   defp run(config, pool, spans, resource, offset, count, deadline, ledger) do
+    resource = resolve_resource(resource)
+
     context = %{
       config: config,
       pool: pool,
@@ -95,6 +127,10 @@ defmodule OtlpShipper.TraceBatch do
   catch
     _, _ -> conclude({:error, :invalid_batch}, %{ledger: ledger})
   end
+
+  # SDK resource access and normalization execute within the same bounded worker.
+  defp resolve_resource(resource) when is_function(resource, 0), do: resource.()
+  defp resolve_resource(resource), do: resource
 
   # Enforce cardinality before conversion so excess elements cannot be submitted.
   defp consume(input, state, context) do
