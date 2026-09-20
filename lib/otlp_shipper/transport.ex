@@ -10,7 +10,7 @@ defmodule OtlpShipper.Transport do
   lost after acceptance can lead to duplicates. Partial acceptance is never retried.
   Response bodies are bounded and never included in diagnostics or error details.
   """
-  alias OtlpShipper.{Config, Retry}
+  alias OtlpShipper.{Config, Retry, TraceSuppression}
 
   @type result ::
           :ok | {:ok, :partial, non_neg_integer()} | {:error, atom()} | {:error, atom(), term()}
@@ -27,7 +27,8 @@ defmodule OtlpShipper.Transport do
 
   Records one logical request outcome after retries. Trace partial responses with
   rejected counts greater than `count` are invalid and never retried. This function
-  does not install a tracing SDK adapter or instrumentation suppression.
+  does not install a tracing SDK adapter or sampler. HTTP workers mark exporter
+  work for the consumer-configured `OtlpShipper.TraceSampler` wrapper.
   """
   @spec export_until(Config.t(), atom(), binary(), non_neg_integer(), integer()) :: result()
   def export_until(config, finch, body, count, deadline),
@@ -100,7 +101,8 @@ defmodule OtlpShipper.Transport do
         {:error, :timeout}
 
       true ->
-        task = Task.async(fn -> safely_export(config, finch, body, deadline) end)
+        task = Task.async(fn -> suppressed_export(config, finch, body, deadline) end)
+
         remaining = max(deadline - System.monotonic_time(:millisecond), 0)
 
         case Task.yield(task, remaining) || Task.shutdown(task, :brutal_kill) do
@@ -108,6 +110,11 @@ defmodule OtlpShipper.Transport do
           _ -> {:error, :timeout}
         end
     end
+  end
+
+  # Mark this actual HTTP worker; context attached in its parent is not inherited.
+  defp suppressed_export(config, finch, body, deadline) do
+    TraceSuppression.with_suppression(fn -> safely_export(config, finch, body, deadline) end)
   end
 
   # A trace collector cannot truthfully reject more spans than this request sent.
