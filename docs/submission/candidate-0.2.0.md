@@ -37,8 +37,9 @@ All local gates and independent source review passed: 166 tests, 22 doctests,
 37 strict Cucumber scenarios, strict Credo, Dialyzer (zero errors/skips), audit,
 ExDoc, five existing consumer modes and two replacement modes. The known upstream
 API 1.3.0 `link/2` warning on OTP 29 remains in the minimum optional-API smoke;
-no warning suppression was added. Exact committed revision and remote CI are
-pending. See the [work record](../workflows/phase-7-trace-release.md).
+no warning suppression was added. Exact packaged source revision: `01ff8c1564224d39fc2ca1e07dcafcf83b684eb5`.
+Independent reviewers approved their separate scopes on this commit. Remote CI
+is pending; subsequent evidence-only edits do not change the archive contents. See the [work record](../workflows/phase-7-trace-release.md).
 
 ## Publication boundary
 
