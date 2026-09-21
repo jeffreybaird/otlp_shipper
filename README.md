@@ -1,8 +1,11 @@
 # otlp_shipper
 
-An Elixir package for bounded OTLP/HTTP log shipping and `Telemetry.Metrics`
-reporting. Finch provides HTTP connection pooling; the package owns buffering,
-retry deadlines, and drop reporting. No full OpenTelemetry SDK is required.
+An Elixir package for bounded OTLP/HTTP logs, `Telemetry.Metrics`, and SDK-compatible
+trace export. Finch provides HTTP connection pooling. Logs and metrics work without
+the OpenTelemetry SDK; tracing retains the canonical API, SDK, and instrumentation.
+
+**This source tree prepares 0.2.0; it has not been published.** See the
+[migration guide](docs/migration.md) for trace exporter replacement and rollback.
 
 **[0.1.1 is available on Hex](https://hex.pm/packages/otlp_shipper/0.1.1).**
 [API documentation](https://hexdocs.pm/otlp_shipper/0.1.1/) is public. The GitHub
@@ -196,7 +199,7 @@ individual values fit. These limits are not secret redaction: filter sensitive d
 before logging it.
 
 With the optional `opentelemetry_api`, logs inside a current span carry its 16-byte
-trace ID, 8-byte span ID, and sampled flag. The full SDK is only a test dependency.
+trace ID, 8-byte span ID, and sampled flag. The SDK is optional and only required for SDK trace export.
 A valid explicit `otel_trace_id` / `otel_span_id` pair on the event takes precedence;
 raw bytes, fixed-width hex, and positive integers are accepted. IDs never become
 ordinary attributes. Without tracing or valid metadata, IDs are empty.
@@ -227,9 +230,10 @@ Do not use this package when durable or exactly-once log delivery is required.
 
 The core accepts OTLP message maps. `OtlpShipper.LogHandler` converts Logger events;
 `OtlpShipper.MetricsReporter` aggregates metric definitions. Both signals use the core independently.
-Version 0.1.1 does not export traces. An SDK-compatible trace exporter is planned
-in the repository's `PLAN.md`; it is not yet implemented. The planned adapter keeps
-the existing tracing API, SDK, and instrumentation.
+Public version 0.1.1 does not export traces. The 0.2.0 candidate adds
+`OtlpShipper.TraceExporter`, using the existing tracing API, SDK, and instrumentation.
+The SDK owns the span queue; shipper converts and exports its batches within bounded
+requests and deadlines.
 
 ## Core example
 
@@ -342,10 +346,14 @@ mix deps.get
 mix format --check-formatted
 mix compile --warnings-as-errors
 mix test
+MIX_ENV=test mix cucumber
+mix credo --strict
 mix dialyzer
 mix hex.audit
 mix docs --warnings-as-errors
 scripts/package_smoke.sh
+sh scripts/trace_consumer_smoke.sh
+sh scripts/replacement_consumer_smoke.sh
 ```
 
 Tests use a loopback Bandit collector and generated decoders, with no external
@@ -358,10 +366,11 @@ mix otlp_shipper.conformance
 ```
 
 This pins official Collector **0.160.0**. The task uses an ephemeral loopback port,
-a read-only configuration mount, and synthetic gzip logs and metrics from a separate
+a read-only configuration mount, and synthetic gzip logs, metrics, and SDK spans from a separate
 VM with inherited `OTEL_*` variables removed. It checks the detailed debug exporter's
 log body, severity, attributes, metric types, delta temporality, values, and histogram
-buckets. No credentials or backend account are needed. Docker commands have 30-second
+buckets, SDK span parentage, scope/resource identity, event/status fields, and
+log correlation. No credentials or backend account are needed. Docker commands have 30-second
 deadlines; readiness/output checks allow 60 polls. Its own container is removed on
 success or failure. If the VM is killed, remove the printed container name manually.
 A missing image, stopped engine, or blocked bind mount causes the task to fail;
@@ -417,8 +426,9 @@ outcomes and never recount accepted chunks as unsent.
 ## Unreleased SDK trace integration
 
 The development adapter targets **SDK 1.7.0 / API 1.5.0**. Keep those packages and
-existing instrumentation in the consumer. The package declares the SDK optional,
-so logs/metrics consumers do not acquire it. `OtlpShipper.TraceExporter` and
+existing instrumentation in the consumer. The package declares the SDK optional with `runtime: false`, preserving compile
+ordering while leaving startup to the consumer. Logs/metrics consumers do not
+acquire it. `OtlpShipper.TraceExporter` and
 `OtlpShipper.TraceSampler` are compiled only when their SDK behaviours are available.
 Adding the SDK to an existing consumer requires recompiling `otlp_shipper`.
 Initialization rejects unverified SDK/API versions instead of assuming record
@@ -469,7 +479,10 @@ The example uses an explicitly named provider. Configure your instrumentation to
 use that provider; starting it does not redirect the SDK's global tracer. Direct
 consumers can obtain its tracer with
 `:otel_tracer_provider.get_tracer(CheckoutTraces, "checkout", "1.0", :undefined)`.
-Global-provider migration and representative consumer instructions are Phase 7 work.
+For existing instrumentation using the global tracer, use the tested consumer-owned
+startup sequence in the [migration guide](docs/migration.md), including its explicit
+string `service.instance.id` override. SDK 1.7.0's generated integer instance ID
+can exceed OTLP's signed 64-bit range; such a resource is rejected.
 
 Exporter options are `:pool` plus the trace transport options above. The named pool
 must already exist. `init/1` reads the runtime environment once and returns `:ignore`

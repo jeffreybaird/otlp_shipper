@@ -1,19 +1,19 @@
 # Package metadata and consumer documentation
 
-This is a preparation checklist, not ready-to-paste marketing copy. PLAN.md targets
-OTLP/HTTP logs and metrics; both components and real Collector conformance are implemented.
+This is a preparation checklist, not ready-to-paste marketing copy. The 0.2.0 candidate implements
+OTLP/HTTP logs, metrics, and SDK-compatible traces, including real Collector conformance.
 
 Keep `mix.exs`, README, public module docs, and release notes consistent:
 
 | Field | Current state / required work |
 | --- | --- |
 | Application / intended package | `:otlp_shipper` / `otlp_shipper` on public Hex; publisher/owner `jeffreybaird` |
-| Version | `0.1.1`, published September 13, 2026 |
-| Description | Metadata and README describe implemented logs and metrics |
+| Version | `0.2.0` candidate; public `0.1.1` published September 13, 2026 |
+| Description | Metadata describes logs, metrics, and SDK-compatible trace export; README distinguishes the unpublished candidate |
 | License | MIT text and matching metadata added |
 | Links | Public Hex and versioned HexDocs available; GitHub source/support links remain private |
 | Elixir / OTP support | Elixir 1.19+ / OTP 28+ baseline; minimum and pinned CI plus local OTP 29 checks |
-| Dependencies | Finch and telemetry required; gpb build-time; tracing API optional |
+| Dependencies | Finch/telemetry required; gpb build-time; tracing API and SDK optional; SDK startup consumer-owned |
 
 The README should explain installation, a working minimal example, configuration,
 supervision if needed, errors, limitations, and upgrade notes. If the package exports

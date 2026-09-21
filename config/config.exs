@@ -9,7 +9,8 @@ if config_env() == :test do
       "docs/features/cucumberex.feature",
       "docs/features/trace-compatibility.feature",
       "docs/features/trace-protocol.feature",
-      "docs/features/trace-sdk.feature"
+      "docs/features/trace-sdk.feature",
+      "docs/features/trace-replacement.feature"
     ],
     strict: true
 end
