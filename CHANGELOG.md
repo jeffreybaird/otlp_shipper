@@ -1,6 +1,27 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — candidate, not published
+
+- Add the optional SDK 1.7.0/API 1.5.0 trace exporter, bounded callback conversion,
+  consumer-owned pool lifecycle helper, and delegating sampler wrapper. SDK/API
+  and instrumentation remain consumer-owned; the package does not configure them
+  globally. Trace integration is part of this unpublished candidate.
+- Leave SDK runtime startup explicitly with the consumer while preserving optional
+  compilation order, enabling pool-before-SDK included application startup.
+- Verify real SDK export, cancellation, correlation, restart, sampling feedback,
+  and actual packaged SDK-present/absent releases.
+
+- Add the trace protocol core: vendored generated schemas, transport-only trace
+  configuration, strict normalized span conversion, resource/scope-preserving
+  envelopes, and bounded chunk export under one shared deadline.
+- Decode trace partial responses and preserve span accounting across retries,
+  failures, and deadline cancellation. Extend collector and release-consumer proof
+  while retaining logs/metrics contracts and optional tracing dependencies.
+- Add a fresh production release proof with existing Finch instrumentation, all
+  three signals, correlated logs, and canonical exporter/runtime gpb absence.
+- Extend pinned Collector conformance to SDK spans, parentage, scope/resource
+  identity, event/status fields, and log correlation. Add migration and rollback
+  instructions. No new package release has been published.
 
 ## 0.1.1 — 2026-09-13
 

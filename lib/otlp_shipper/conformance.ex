@@ -1,11 +1,21 @@
 defmodule OtlpShipper.Conformance do
   @moduledoc false
+  alias OtlpShipper.Conformance.{ReplacementReport, TraceOutput}
   # Internal boundary for the opt-in Mix task; no processes start in consumers.
   @image "otel/opentelemetry-collector@sha256:e495787f07dbe432ce763ebaf5bc3d113850e9eee2250ade7a3da6a882d0d69a"
 
   @doc false
   @spec run(function()) :: :ok | {:error, atom()}
   def run(command \\ &System.cmd/3) do
+    if Code.ensure_loaded?(OtlpShipper.TraceExporter) and Code.ensure_loaded?(:otel_tracer) do
+      run_collector(command)
+    else
+      {:error, :tracing_sdk_unavailable}
+    end
+  end
+
+  # Only the opt-in task invokes Docker; runtime consumers start no processes here.
+  defp run_collector(command) do
     name =
       "otlp-shipper-conformance-" <> Base.encode16(:crypto.strong_rand_bytes(8), case: :lower)
 
@@ -42,9 +52,8 @@ defmodule OtlpShipper.Conformance do
                  "mix",
                  ["run", "--no-compile", "--no-start", "#{priv}/conformance/emit.exs", endpoint],
                  env: clean_environment(System.get_env())
-               ),
-             :ok <- await_output(command, name, &(verify(&1) == :ok)) do
-          :ok
+               ) do
+          await_output(command, name, &(verify(&1) == :ok and verify_traces(&1) == :ok))
         end
       after
         # Cleanup is also attempted when a command raises or the fixture fails.
@@ -132,6 +141,14 @@ defmodule OtlpShipper.Conformance do
       {:error, :collector_output_mismatch}
     end
   end
+
+  @doc false
+  @spec verify_traces(String.t()) :: :ok | {:error, atom()}
+  def verify_traces(output), do: TraceOutput.verify(output)
+
+  @doc false
+  @spec verify_replacement_report(map()) :: :ok | {:error, atom()}
+  def verify_replacement_report(report), do: ReplacementReport.verify(report)
 
   defp contains_lines?(output, expected) do
     lines =

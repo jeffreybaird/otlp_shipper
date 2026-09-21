@@ -47,15 +47,16 @@ defmodule OtlpShipper.LogRecord do
   """
   @spec limits(keyword()) :: {:ok, map()} | {:error, :invalid_log_limits}
   def limits(opts \\ []) do
-    if Keyword.keyword?(opts) and
-         Enum.all?(opts, fn {key, value} ->
-           key in Keyword.keys(@defaults) and is_integer(value) and
-             value >= if(key == :max_attributes, do: 0, else: 32)
-         end) do
+    if Keyword.keyword?(opts) and Enum.all?(opts, &valid_limit?/1) do
       {:ok, Map.new(Keyword.merge(@defaults, opts))}
     else
       {:error, :invalid_log_limits}
     end
+  end
+
+  defp valid_limit?({key, value}) do
+    key in Keyword.keys(@defaults) and is_integer(value) and
+      value >= if(key == :max_attributes, do: 0, else: 32)
   end
 
   @doc """
@@ -175,28 +176,32 @@ defmodule OtlpShipper.LogRecord do
     {values, _remaining} =
       items
       |> Stream.take(64)
-      |> Enum.reduce_while({[], budget - 8}, fn item, {values, remaining} ->
-        if remaining < 32 do
-          {:halt, {values, remaining}}
-        else
-          value = encode.(item, remaining - 8)
-          candidate = %{value: {type, %{values: Enum.reverse([value | values])}}}
-          size = encoded_size(candidate)
-
-          cond do
-            type == :kvlist_value and Enum.any?(values, &(&1.key == value.key)) ->
-              {:cont, {values, remaining}}
-
-            size <= budget ->
-              {:cont, {[value | values], budget - size - 8}}
-
-            true ->
-              {:halt, {values, remaining}}
-          end
-        end
+      |> Enum.reduce_while({[], budget - 8}, fn item, acc ->
+        collect_value(item, acc, type, budget, encode)
       end)
 
     %{value: {type, %{values: Enum.reverse(values)}}}
+  end
+
+  defp collect_value(_item, {values, remaining}, _type, _budget, _encode)
+       when remaining < 32,
+       do: {:halt, {values, remaining}}
+
+  defp collect_value(item, {values, remaining}, type, budget, encode) do
+    value = encode.(item, remaining - 8)
+    candidate = %{value: {type, %{values: Enum.reverse([value | values])}}}
+    size = encoded_size(candidate)
+
+    cond do
+      type == :kvlist_value and Enum.any?(values, &(&1.key == value.key)) ->
+        {:cont, {values, remaining}}
+
+      size <= budget ->
+        {:cont, {[value | values], budget - size - 8}}
+
+      true ->
+        {:halt, {values, remaining}}
+    end
   end
 
   defp bounded_string(value, budget) do

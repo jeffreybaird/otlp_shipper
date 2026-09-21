@@ -101,21 +101,25 @@ defmodule OtlpShipper.Metrics.Worker do
       dropped(:series_limit, 1)
       state
     else
-      definition = Map.fetch!(state.definitions, name)
+      aggregate_sample(state, key, previous, name, value, observed)
+    end
+  end
 
-      case Aggregation.add(definition.kind, previous, value, definition.bounds, observed) do
-        {:ok, next} ->
-          negative = definition.kind == :sum and value < 0
+  defp aggregate_sample(state, key, previous, name, value, observed) do
+    definition = Map.fetch!(state.definitions, name)
 
-          nonmonotonic =
-            if negative, do: MapSet.put(state.nonmonotonic, name), else: state.nonmonotonic
+    case Aggregation.add(definition.kind, previous, value, definition.bounds, observed) do
+      {:ok, next} ->
+        negative = definition.kind == :sum and value < 0
 
-          %{state | series: Map.put(state.series, key, next), nonmonotonic: nonmonotonic}
+        nonmonotonic =
+          if negative, do: MapSet.put(state.nonmonotonic, name), else: state.nonmonotonic
 
-        {:error, reason} ->
-          dropped(reason, 1)
-          state
-      end
+        %{state | series: Map.put(state.series, key, next), nonmonotonic: nonmonotonic}
+
+      {:error, reason} ->
+        dropped(reason, 1)
+        state
     end
   end
 

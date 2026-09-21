@@ -7,13 +7,18 @@ mix deps.get
 mix format --check-formatted
 mix compile --warnings-as-errors
 mix test
+MIX_ENV=test mix cucumber
+mix credo --strict
 ```
 
 CI also runs `mix dialyzer`, `mix hex.audit`, `mix docs --warnings-as-errors`, and
 `scripts/package_smoke.sh` (Hex build plus a fresh consumer release). Run the full code-commit gate through Dialyzer before committing. For focused iteration use
 `mix test test/otlp_shipper_test.exs`; use `mix test --cover` for coverage inspection.
 No browser, database, external collector, or production credentials are needed.
-The suite starts an isolated loopback collector.
+The suite starts an isolated loopback collector. Strict Credo analysis is required
+before code commits and runs in both CI toolchain jobs before package checks.
+Resolve findings in the code; do not disable checks, add exclusions, or mask failures
+to make the gate pass.
 
 ## Test layers
 
@@ -26,13 +31,28 @@ The suite starts an isolated loopback collector.
 | Package installation | Fresh consumer using unpacked package contents |
 
 Every new behavior and meaningful branch needs coverage. Acceptance tests enumerate
-consumer success and failure pathways. Write Cucumber-style Gherkin specifications
-under `docs/features/` before implementing new behavior. Map every scenario ID to
-an executable ExUnit unit/integration test (or the harness's Python tests for tooling).
-Gherkin is the acceptance specification; ExUnit remains the package test runner.
-Do not add a Cucumber runtime dependency to the shipped library. See
+consumer success and failure pathways. Write Gherkin specifications under
+`docs/features/` before implementing new behavior. Execute new Elixir acceptance
+features with CucumberEx, with ExUnit unit/integration tests proving lower-level
+boundaries. Map every scenario ID to its step definitions and relevant ExUnit tests
+(or the harness's Python tests for tooling). CucumberEx is a test-only dependency;
+it does not enter consumer releases. See
 [codex-agents.md](codex-agents.md) for the red/green handoff and evidence format.
 Phoenix, Wallaby, Ecto sandboxing, and ExMachina are not required.
+
+### Executable Gherkin
+
+Run `MIX_ENV=test mix cucumber` alongside `mix test`. Both CI toolchain jobs run
+this separate acceptance check. `config/config.exs` configures CucumberEx with
+`strict: true`, so undefined or pending steps fail the check.
+
+The initial executable feature is `docs/features/cucumberex.feature`. Place step
+definition modules under `features/step_definitions/` and register each future
+executable feature in CucumberEx's `paths` list in `config/config.exs`.
+Keep that list explicit: historical feature specifications, including the Python
+agent-harness scenarios, remain specifications mapped to their existing tests;
+they are not currently executable CucumberEx features. Do not add them to discovery
+until their step definitions implement the scenarios.
 
 Do not change a test, helper, fixture, doctest, or discovery setting to conceal an
 implementation defect. Compare expectation changes with the requested contract;
@@ -78,7 +98,8 @@ Before release, exercise the oldest supported Elixir/OTP combination and the cur
 supported combination, plus relevant dependency bounds. Record tested versions and
 any gaps. PLAN.md requires Dialyzer and a clean `mix hex.audit` for release. Both are now
 configured in CI.
-Credo remains optional. There is no Marquee verification alias here.
+`mix credo --strict` is also required for release readiness. There is no Marquee
+verification alias here.
 
 Follow [submission/build.md](submission/build.md) for the package consumer check.
 A source checkout passing tests does not prove an archive contains everything a
@@ -209,3 +230,42 @@ Hex installation check.
 See [0.1.1 release verification](submission/release-0.1.1.md) for public Hex
 installation, the widened Finch requirement, and compatibility smoke results.
 Earlier phase and 0.1.0 records retain their original versions and dates.
+
+
+## Phase 5 trace protocol checks
+
+`docs/features/trace-protocol.feature` executes TPC-01 through TPC-07 through
+CucumberEx. New trace ExUnit tests cover normalized conversion, exact generated
+byte limits, original resources/scopes, trace-only configuration, real HTTP and
+partial responses, chunk outcomes, shared deadlines, blocked enumerables, and
+blocked telemetry callbacks. Trace doctests cover the pure public entry points.
+
+All three package-smoke modes now also deliver a normalized span through the trace
+core from a production release, with the SDK, canonical exporter, and runtime gpb
+absent. The optional API checks retain their existing mode-specific expectations.
+This proves protocol packaging, not the SDK adapter or instrumentation migration;
+those remain Phases 6–7. Current run results are recorded in the
+[Phase 5 work record](workflows/phase-5-trace-protocol.md).
+
+
+## Phase 7 replacement verification
+
+The strict suite now includes `trace-replacement.feature`. It validates scoped
+Collector output and report structure; synthetic report validation does not prove
+execution. Actual release checks run separately:
+
+```sh
+sh scripts/trace_consumer_smoke.sh
+sh scripts/replacement_consumer_smoke.sh
+OTLP_SMOKE_DEPENDENCY_SET=minimum sh scripts/replacement_consumer_smoke.sh
+mix otlp_shipper.conformance
+```
+
+The replacement fixture uses real SDK/API and Finch instrumentation with the
+canonical exporter and runtime gpb absent. CI runs current/minimum shared-dependency
+modes. The real Collector remains opt-in and uses synthetic data on local Docker.
+Its task now requires logs, metrics, traces, and exact correlation/parentage; SDK
+absence returns `{:error, :tracing_sdk_unavailable}` before invoking Docker.
+Use `OTLP_REPLACEMENT_REPORT=/absolute/path/report.json` to retain successful actual
+release evidence. Reports include runtime application versions and descriptive
+elapsed/memory observations; they are not a comparative benchmark.

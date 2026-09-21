@@ -69,6 +69,11 @@ and verify fetch, compilation, and the smoke test. Check the public package page
 versioned docs. Record the result. If there is a problem, stop further publication
 and determine a fix; do not assume an existing release can always be replaced.
 
+Run `sh scripts/trace_consumer_smoke.sh` for SDK-absent/present releases and
+`sh scripts/replacement_consumer_smoke.sh` for all three signals with real Finch
+instrumentation. Repeat the latter with `OTLP_SMOKE_DEPENDENCY_SET=minimum`; save
+actual reports via an absolute `OTLP_REPLACEMENT_REPORT` path when preparing evidence.
+
 Run the minimum dependency modes documented in [../testing.md](../testing.md), and
 run `mix otlp_shipper.conformance` separately from the default gate. The conformance
 config and emitter under `priv/conformance/` are included in the archive; test debug

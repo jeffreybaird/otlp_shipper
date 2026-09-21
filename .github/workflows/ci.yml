@@ -49,8 +49,14 @@ jobs:
       - name: Run tests
         run: mix test
 
+      - name: Run strict Cucumber acceptance tests
+        run: MIX_ENV=test mix cucumber
+
       - name: Static analysis
         run: mix dialyzer
+
+      - name: Strict Credo analysis
+        run: mix credo --strict
 
       - name: Audit dependencies
         run: mix hex.audit
@@ -60,6 +66,12 @@ jobs:
 
       - name: Verify package in a clean production consumer
         run: scripts/package_smoke.sh
+
+      - name: Verify optional trace SDK compilation in fresh releases
+        run: sh scripts/trace_consumer_smoke.sh
+
+      - name: Verify all signals with existing Finch instrumentation
+        run: sh scripts/replacement_consumer_smoke.sh
 
   minimum:
     runs-on: ubuntu-latest
@@ -74,7 +86,17 @@ jobs:
         run: mix deps.get
       - name: Verify oldest supported toolchain
         run: mix compile --warnings-as-errors && mix test
+      - name: Run strict Cucumber acceptance tests
+        run: MIX_ENV=test mix cucumber
+      - name: Strict Credo analysis
+        run: mix credo --strict
       - name: Verify minimum runtime dependencies without tracing
         run: OTLP_SMOKE_DEPENDENCY_SET=minimum scripts/package_smoke.sh
       - name: Verify minimum optional tracing API
         run: OTLP_SMOKE_DEPENDENCY_SET=minimum_with_tracing scripts/package_smoke.sh
+
+      - name: Verify optional trace SDK compilation in fresh releases
+        run: sh scripts/trace_consumer_smoke.sh
+
+      - name: Verify instrumented replacement with minimum dependencies
+        run: OTLP_SMOKE_DEPENDENCY_SET=minimum sh scripts/replacement_consumer_smoke.sh

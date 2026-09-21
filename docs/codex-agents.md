@@ -43,10 +43,16 @@ an ordinary task/sidebar conversation for a subagent.
 2. Spec writer breaks the feature into `docs/features/<feature>.feature` using
    Cucumber/Gherkin `Feature`, `Scenario`/`Scenario Outline`, `Given`, `When`, `Then`.
    Give scenarios stable IDs and map each to test file/test name in the work record.
+   Execute new Elixir acceptance scenarios with CucumberEx: add step definitions
+   under `features/step_definitions/` and register the feature path in
+   `config/config.exs`. Keep strict execution enabled. Retain ExUnit coverage for
+   meaningful unit and integration boundaries. Historical Python harness features
+   remain mapped to Python tests unless explicitly converted to executable features.
    Cover happy path, declared failures, and boundaries. Write new unit and integration
    test files. Existing test changes must preserve the intended contract or implement
    a user-authorized contract change; they must never conceal an implementation defect.
-3. Runner executes the focused tests before implementation. Record command, exit
+3. Runner executes the focused tests before implementation, including
+   `MIX_ENV=test mix cucumber` for executable acceptance features. Record command, exit
    code, expected failure and actual assertion, revision plus working-tree diff
    identity, and environment. Compilation/setup failures alone are not valid red
    evidence for an assertion-based regression. Return environment problems to the

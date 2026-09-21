@@ -55,6 +55,9 @@ defmodule OtlpShipper.Config do
                :service_version,
                :service_instance_id
              ]
+  @trace_limits @limits -- [:max_queue, :flush_ms, :shutdown_ms]
+  @trace_options @trace_limits ++
+                   [:max_retries, :endpoint, :base_endpoint, :headers, :compression, :protocol]
 
   @doc """
   Resolves and validates configuration without accessing global state.
@@ -97,15 +100,75 @@ defmodule OtlpShipper.Config do
   @spec load(atom(), keyword()) :: {:ok, t()} | {:error, atom()} | {:error, atom(), atom()}
   def load(signal, opts \\ []), do: new(signal, opts, System.get_env())
 
-  defp validate_options(opts, env) do
+  @doc """
+  Resolves trace transport settings without constructing a resource or reading the environment.
+
+  Only `:traces` is accepted. Explicit options override trace-specific environment
+  variables, then generic variables. `:endpoint` is exact; `:base_endpoint` appends
+  `/v1/traces`. `:protocol` accepts only `"http/protobuf"`.
+
+  Supports headers, compression, timeout, retries, and request limits with the same
+  units and defaults as `new/3`. `:max_batch` is independent of SDK queue size.
+  Resource/service identity and SDK queue/flush/shutdown options are rejected.
+  The returned resource is `nil`; the future SDK adapter owns resource selection.
+
+      iex> {:ok, config} = OtlpShipper.Config.transport(:traces)
+      iex> {config.endpoint, config.resource}
+      {"http://localhost:4318/v1/traces", nil}
+  """
+  @spec transport(atom(), keyword(), map()) ::
+          {:ok, t()} | {:error, atom()} | {:error, atom(), atom()}
+  def transport(signal, opts \\ [], env \\ %{})
+
+  def transport(:traces, opts, env) do
+    with :ok <- validate_options(opts, env, @trace_options),
+         :ok <- validate_trace_protocol(opts, env),
+         {:ok, endpoint} <- resolve_endpoint(:traces, opts, env),
+         {:ok, headers} <- resolve_headers(:traces, opts, env),
+         {:ok, compression} <- resolve_compression(:traces, opts, env),
+         {:ok, limits} <- resolve_limits(:traces, opts, env) do
+      config = struct!(__MODULE__, limits)
+
+      {:ok,
+       %{
+         config
+         | signal: :traces,
+           endpoint: endpoint,
+           headers: headers,
+           compression: compression,
+           resource: nil
+       }}
+    end
+  end
+
+  def transport(_, _, _), do: {:error, :invalid_signal}
+
+  @doc """
+  Reads the current environment once and resolves trace transport configuration.
+
+  Uses `transport/3` validation and precedence. Changes to environment variables
+  require a new call and component restart; no SDK/application settings are mutated.
+  """
+  @spec load_transport(atom(), keyword()) ::
+          {:ok, t()} | {:error, atom()} | {:error, atom(), atom()}
+  def load_transport(signal, opts \\ []), do: transport(signal, opts, System.get_env())
+
+  # Validate option shape before inspecting names or accessing environment values.
+  defp validate_options(opts, env, allowed \\ @options) do
     if Keyword.keyword?(opts) and is_map(env) do
-      case Keyword.keys(opts) -- @options do
+      case Keyword.keys(opts) -- allowed do
         [] -> :ok
         [key | _] -> {:error, :unknown_option, key}
       end
     else
       {:error, :invalid_options}
     end
+  end
+
+  # The trace resolver additionally permits an explicit protocol override.
+  defp validate_trace_protocol(opts, env) do
+    protocol = Keyword.get(opts, :protocol, setting(env, :traces, "PROTOCOL", "http/protobuf"))
+    if protocol == "http/protobuf", do: :ok, else: {:error, :unsupported_protocol}
   end
 
   defp validate_protocol(signal, env) do
@@ -115,22 +178,11 @@ defmodule OtlpShipper.Config do
   end
 
   defp resolve_endpoint(signal, opts, env) do
-    signal_endpoint =
-      nonempty(env["OTEL_EXPORTER_OTLP_#{String.upcase(to_string(signal))}_ENDPOINT"])
-
-    {url, append?} =
-      cond do
-        Keyword.has_key?(opts, :endpoint) -> {opts[:endpoint], false}
-        Keyword.has_key?(opts, :base_endpoint) -> {opts[:base_endpoint], true}
-        signal_endpoint != nil -> {signal_endpoint, false}
-        true -> {nonempty(env["OTEL_EXPORTER_OTLP_ENDPOINT"]) || "http://localhost:4318", true}
-      end
+    {url, append?} = endpoint_setting(signal, opts, env)
 
     with true <- is_binary(url),
          {:ok, uri} <- URI.new(url),
-         true <- uri.scheme in ["http", "https"] and is_binary(uri.host) and uri.host != "",
-         true <- is_integer(uri.port) and uri.port in 1..65535,
-         true <- is_nil(uri.userinfo) and is_nil(uri.fragment) do
+         true <- valid_endpoint?(uri) do
       path =
         if append?,
           do: String.trim_trailing(uri.path || "", "/") <> "/v1/#{signal}",
@@ -139,6 +191,24 @@ defmodule OtlpShipper.Config do
       {:ok, URI.to_string(%{uri | path: path})}
     else
       _ -> {:error, :invalid_endpoint}
+    end
+  end
+
+  defp valid_endpoint?(uri) do
+    uri.scheme in ["http", "https"] and is_binary(uri.host) and uri.host != "" and
+      is_integer(uri.port) and uri.port in 1..65_535 and
+      is_nil(uri.userinfo) and is_nil(uri.fragment)
+  end
+
+  defp endpoint_setting(signal, opts, env) do
+    signal_endpoint =
+      nonempty(env["OTEL_EXPORTER_OTLP_#{String.upcase(to_string(signal))}_ENDPOINT"])
+
+    cond do
+      Keyword.has_key?(opts, :endpoint) -> {opts[:endpoint], false}
+      Keyword.has_key?(opts, :base_endpoint) -> {opts[:base_endpoint], true}
+      signal_endpoint != nil -> {signal_endpoint, false}
+      true -> {nonempty(env["OTEL_EXPORTER_OTLP_ENDPOINT"]) || "http://localhost:4318", true}
     end
   end
 
@@ -155,18 +225,16 @@ defmodule OtlpShipper.Config do
          true <- Enum.all?(headers, &valid_header?/1) do
       headers = Enum.map(headers, fn {key, value} -> {String.downcase(key), value} end)
 
-      if Enum.any?(headers, fn {key, _} ->
-           key in [
-             "host",
-             "content-length",
-             "content-type",
-             "content-encoding",
-             "transfer-encoding"
-           ]
-         end), do: {:error, :reserved_header}, else: {:ok, headers}
+      if Enum.any?(headers, &reserved_header?/1),
+        do: {:error, :reserved_header},
+        else: {:ok, headers}
     else
       _ -> {:error, :invalid_headers}
     end
+  end
+
+  defp reserved_header?({key, _}) do
+    key in ["host", "content-length", "content-type", "content-encoding", "transfer-encoding"]
   end
 
   defp valid_header?({key, value}) when is_binary(key) and is_binary(value),
@@ -185,21 +253,26 @@ defmodule OtlpShipper.Config do
   end
 
   defp resolve_limits(signal, opts, env) do
+    keys = if signal == :traces, do: @trace_limits, else: @limits
     defaults = Map.from_struct(%__MODULE__{})
     timeout = Keyword.get(opts, :timeout, parse_integer(setting(env, signal, "TIMEOUT", "10000")))
-    limits = Keyword.put(Keyword.take(opts, @limits ++ [:max_retries]), :timeout, timeout)
-    values = Map.merge(Map.take(defaults, @limits ++ [:max_retries]), Map.new(limits))
-    invalid = Enum.find(@limits, fn key -> not (is_integer(values[key]) and values[key] > 0) end)
+    limits = Keyword.put(Keyword.take(opts, keys ++ [:max_retries]), :timeout, timeout)
+    values = Map.merge(Map.take(defaults, keys ++ [:max_retries]), Map.new(limits))
+    invalid = Enum.find(keys, fn key -> not (is_integer(values[key]) and values[key] > 0) end)
 
+    validate_limits(values, invalid, signal)
+  end
+
+  # Keep logs/metrics error precedence while leaving the trace queue SDK-owned.
+  defp validate_limits(values, invalid, signal) do
     cond do
       invalid != nil ->
         {:error, :invalid_option, invalid}
 
-      not (is_integer(values.max_retries) and values.max_retries >= 0 and
-               values.max_retries <= 100) ->
+      not valid_max_retries?(values.max_retries) ->
         {:error, :invalid_option, :max_retries}
 
-      values.max_batch > values.max_queue ->
+      signal != :traces and values.max_batch > values.max_queue ->
         {:error, :invalid_option, :max_batch}
 
       values.max_item_bytes > values.max_batch_bytes ->
@@ -212,6 +285,8 @@ defmodule OtlpShipper.Config do
         {:ok, values}
     end
   end
+
+  defp valid_max_retries?(value), do: is_integer(value) and value >= 0 and value <= 100
 
   defp parse_integer(value) when is_binary(value) do
     case Integer.parse(value) do

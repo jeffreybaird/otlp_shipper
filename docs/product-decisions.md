@@ -211,3 +211,106 @@ Each phase waits for its predecessor's merge. A full tracing SDK replacement,
 gRPC, durable queues, metric exemplars, and global auto-configuration are deferred.
 The current release remains 0.1.1 with logs/metrics only; a candidate tracing release
 is a future readiness decision, not publication authorization.
+
+
+## Phase 4 compatibility investigation — September 17, 2026
+
+The [trace compatibility decision record](decisions/trace-compatibility.md) defines
+the initial SDK 1.7.0/API 1.5.0 target and the proposed Phase 5–6 boundaries.
+Test-only probes exercise real SDK batches, ownership, cancellation, flush, retry,
+queue admission, restart, and record fidelity. A fresh consumer prototype proves
+optional-SDK compilation with a dependency-ordering edge; the real package's SDK
+dependency remains test-only until its guarded adapter is implemented.
+
+The owner approved a consumer-configured delegating sampler wrapper to prevent
+exporter HTTP feedback. Real Finch instrumentation probes verify marked requests
+are not sampled and ordinary sampling resumes. The package must not install that
+sampler into consumer configuration automatically. Supported instrumentation scope
+and remaining implementation obligations are explicit in the decision record.
+
+Phase 4 merged in PR #16 on September 17, 2026. Its probes implement no production
+SDK exporter. Version 0.1.1 remains logs/metrics only.
+
+
+## Phase 5 protocol core — unreleased
+
+The trace core accepts normalized maps independently of SDK record definitions.
+`TraceRecord` preserves supported fields and rejects malformed or oversized spans;
+`TraceEncoder` groups original scope name, version, and schema under the authoritative
+resource. Vendored v1.5.0 trace schemas generate a package-owned codec at build time.
+No dependency change or canonical-exporter codec reuse is needed.
+
+Trace-only `Config.transport/3` resolves request options without creating a resource
+or borrowing log queue settings. `TraceBatch.export/6` consumes a finite enumerable
+with its declared count, constructs count/byte-bounded requests, and returns accepted,
+rejected, invalid, failed, and unsent counts. One linked worker bounds conversion,
+enumeration, encoding, HTTP, retries, and diagnostics under a shared deadline.
+A parent-owned ETS snapshot commits outcomes before synchronous telemetry callbacks.
+Cancellation may omit diagnostics; it cannot erase an already committed acceptance.
+Failed means submitted without confirmed acceptance, not proof of remote failure.
+
+The core does not add a span queue. Accepted chunks are never replayed after later
+failure. A late source-count mismatch retains prior delivery and returns an error.
+Production SDK callbacks, lifecycle ownership, optional SDK compilation, and the
+approved sampler wrapper remain Phase 6. The packaged-consumer smoke exercises
+raw trace-core HTTP delivery without the SDK, canonical exporter, or runtime gpb;
+it does not replace Phase 7's real-instrumentation migration proof.
+
+
+## Phase 6 SDK integration — unreleased
+
+The optional guarded exporter targets SDK 1.7.0 / API 1.5.0 and rejects unverified
+version pairs at initialization. The SDK dependency is now optional instead of
+test-only, providing the consumer compilation-order edge established in Phase 4.
+Logs/metrics consumers still do not install it. Adding the SDK later requires
+recompilation; the package does not hot-enable the adapter.
+
+The consumer supplies a named Finch pool. `TraceExporter.pool_child_spec/1` uses the
+existing bounded restart boundary; the consumer places it before the SDK provider
+in a `:rest_for_one` tree. Export and shutdown own neither the pool nor another
+span queue. A lazy ETS stream normalizes one source record at a time inside the
+callback's shared deadline. ETS copies that source record before validation;
+subsequent normalized allocation is bounded, but SDK retention is not.
+
+The approved sampler wrapper delegates ordinary sampling and drops spans marked
+inside actual shipper HTTP workers, including log/metric requests. It restores the
+previous context and never installs itself globally. The supported feedback proof
+uses synchronous Finch instrumentation 0.2.0; cross-process instrumentation is not
+implicitly covered. SDK resources/scopes and exposed dropped counts remain
+preserved. Scope attributes and link flags absent from these SDK records cannot be
+exported. Original event/link order is restored from SDK storage order.
+
+The SDK timeout should exceed the exporter budget by at least 2,000 ms. Flush
+return remains asynchronous, and SDK termination may omit exporter shutdown.
+Partial/invalid or already-partly-accepted batches map to permanent failure;
+transient exhaustion before any confirmed acceptance maps to retryable failure,
+without implying SDK requeue. Invalid-init diagnostics have a 100 ms internal
+budget, so a blocked subscriber cannot hang provider startup. Real Collector trace
+conformance and the complete replacement/migration proof remain Phase 7. Hex 0.1.1
+still ships logs and metrics only; no new release has been published.
+
+
+## Phase 7 release preparation — unpublished 0.2.0 candidate
+
+The source includes the SDK exporter, migration guide, three-signal packaged
+consumer, and pinned real Collector trace/correlation verification. The supported
+SDK/API pair remains 1.7.0/1.5.0 in both shared-dependency modes. Representative
+Finch instrumentation is a separate fixture dependency, not a new library runtime
+dependency. The canonical exporter and runtime gpb are absent from that proof.
+
+Consumers own the global SDK as an included application and start its Finch pool
+first. The optional SDK dependency has `runtime: false`, preserving compilation
+ordering without imposing application startup. The consumer makes startup ownership
+explicit; its own direct SDK dependency must match the chosen ordinary/included
+application arrangement. The SDK creates global application tracers normally.
+The library never installs sampling or configuration globally. See the migration
+guide for startup, resource consistency, and the verified SDK-specific boundary.
+
+The candidate version is 0.2.0. It is not a public release; 0.1.1 remains the
+published logs/metrics package. Release authorization, final merged revision,
+publication and public-install verification are separate from development.
+See the [Phase 7 work record](workflows/phase-7-trace-release.md) for current evidence.
+Elapsed time, VM snapshots and dependency inventory are descriptive observations;
+no comparative throughput, allocation, retained-memory, or package-size advantage
+is claimed. API/SDK replacement, gRPC, durable storage, and global auto-configuration
+remain outside scope.

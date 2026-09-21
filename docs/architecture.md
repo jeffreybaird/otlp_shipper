@@ -2,14 +2,14 @@
 
 This guide summarizes [../PLAN.md](../PLAN.md). The shared core, Logger adapter,
 and metrics reporter are implemented, including Phase 3 conformance/release work.
-Trace export is planned in Phases 4–7 and is not part of the current 0.1.1 release.
+The unreleased trace protocol core and Phase 6 SDK integration are implemented. Tracing is not part of the current 0.1.1 release.
 Confirmed: `otlp_shipper`, module root `OtlpShipper`, public Hex, Finch directly.
 
 ## One package, independent signals
 
 The log handler and metrics reporter share the core and never depend on each other.
 Keep the log handler replaceable if upstream SDK support makes it unnecessary.
-The consumer chooses which components to start. Planned trace export integrates
+The consumer chooses which components to start. Unreleased trace export integrates
 with the existing OTel SDK batch processor; it does not replace that SDK or add
 another shipper queue for spans.
 
@@ -22,7 +22,10 @@ another shipper queue for spans.
 | Buffer | Logs/metrics batching, periodic/size flush, bounded retention, shutdown flush |
 | LogHandler | Logger event conversion, severity, correlation, metadata filtering and truncation |
 | MetricsReporter | Telemetry.Metrics attachment, tag/unit conversion, interval aggregation |
-| TraceExporter (planned) | SDK callbacks, faithful span/resource/scope conversion, synchronous bounded HTTP export in the SDK worker |
+| TraceRecord / TraceEncoder | SDK-independent conversion and generated, resource/scope-preserving request encoding |
+| TraceBatch | Bounded synchronous trace requests under one conversion/HTTP/retry deadline |
+| TraceExporter / TraceSDKRecord | Guarded SDK callbacks and version-specific normalization within bounded synchronous export |
+| TraceSampler / TraceSuppression | Consumer-configured sampling delegation and actual HTTP-worker feedback suppression |
 
 Separate environment reads from pure configuration resolution for deterministic
 doctests. Validate the OTLP endpoint path and signal-specific precedence against the
@@ -108,9 +111,9 @@ rejecting excessive data instead of truncating; copied binary slices bound retai
 memory. Histogram bounds are validated after double conversion as well as before
 export. Numeric overflow is an observed drop, never wrapped arithmetic.
 
-## Planned trace boundary
+## Unreleased trace boundary
 
-The proposed `OtlpShipper.TraceExporter` implements the SDK's exporter callbacks.
+The guarded `OtlpShipper.TraceExporter` implements the SDK's exporter callbacks.
 The SDK owns span lifecycle, sampling, propagation, and batching. Export runs in
 the SDK worker and must finish consuming its temporary ETS table before returning.
 Preserve SDK resources, original instrumentation scopes, and supported span fields;
@@ -123,7 +126,22 @@ have explicit supervised ownership and cleanup independent of assumptions about
 SDK shutdown callbacks. Prevent exporter HTTP instrumentation from feeding traces
 back into itself. SDK queue limits and shipper request limits are separate contracts.
 
-Phase 4 must prove optional-SDK compilation, record compatibility, startup order,
-cleanup, callback result mapping, and numeric limits before implementation.
-Phases 5–7 build protocol support, integrate the SDK, and prove a packaged three-signal
-consumer with the canonical exporter absent. See PLAN.md §§12–16 for acceptance IDs.
+Phase 4 proved the compatibility contracts in the
+[decision record](decisions/trace-compatibility.md). The Phase 5 core uses normalized
+maps and an explicit native clock offset, with no SDK record imports. Trace-only
+configuration leaves resource ownership with the caller. The batch worker constructs
+one bounded request at a time and keeps coherent outcome counters in a parent-owned
+ETS table. Transport commits each result there before emitting diagnostics, so a
+blocked telemetry subscriber cannot erase confirmed delivery when the worker is killed.
+Forced cancellation can omit final diagnostics; returned counters retain committed
+outcomes. The caller supplies the source count to account for an unvisited suffix
+without evaluating a blocked enumerable.
+
+Phase 6 integrates SDK callbacks and the approved consumer-configured sampler.
+The consumer owns its rest-for-one pool/provider tree; exporter initialization
+validates a preexisting named pool and never mutates SDK configuration. The optional
+SDK dependency supplies compilation ordering. Initialization diagnostics are bounded
+to 100 ms, and the SDK callback deadline starts before normalization. Raw source
+record retrieval remains part of the SDK memory boundary.
+Phase 7 proves a packaged three-signal consumer with real instrumentation and the
+canonical exporter absent. See PLAN.md §§12–16 for acceptance IDs.

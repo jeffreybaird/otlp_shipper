@@ -1,0 +1,296 @@
+diff --git a/codex-rs/hooks/src/events/pre_tool_use.rs b/codex-rs/hooks/src/events/pre_tool_use.rs
+index c1baebd..5dccba4 100644
+--- a/codex-rs/hooks/src/events/pre_tool_use.rs
++++ b/codex-rs/hooks/src/events/pre_tool_use.rs
+@@ -205,6 +205,10 @@ fn parse_completed(
+     match run_result.error.as_deref() {
+         Some(error) => {
+             status = HookRunStatus::Failed;
++            if handler.can_apply_control_effects() {
++                should_block = true;
++                block_reason = Some(format!("PreToolUse hook failed: {error}"));
++            }
+             entries.push(HookOutputEntry {
+                 kind: HookOutputEntryKind::Error,
+                 text: error.to_string(),
+@@ -309,6 +313,10 @@ fn parse_completed(
+     }
+ }
+
++#[cfg(test)]
++#[path = "pre_tool_use_failure_tests.rs"]
++mod failure_tests;
++
+ fn serialization_failure_outcome(hook_events: Vec<HookCompletedEvent>) -> PreToolUseOutcome {
+     PreToolUseOutcome {
+         hook_events,
+diff --git a/codex-rs/hooks/src/events/pre_tool_use_failure_tests.rs b/codex-rs/hooks/src/events/pre_tool_use_failure_tests.rs
+new file mode 100644
+index 0000000..34e832f
+--- /dev/null
++++ b/codex-rs/hooks/src/events/pre_tool_use_failure_tests.rs
+@@ -0,0 +1,264 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++#[cfg(unix)]
++use std::time::Duration;
++
++use codex_protocol::ThreadId;
++use codex_protocol::protocol::HookCompletedEvent;
++use codex_protocol::protocol::HookEventName;
++use codex_protocol::protocol::HookOutputEntry;
++use codex_protocol::protocol::HookOutputEntryKind;
++use codex_protocol::protocol::HookRunStatus;
++use codex_protocol::protocol::HookSource;
++use codex_utils_absolute_path::AbsolutePathBuf;
++use futures::future::BoxFuture;
++use pretty_assertions::assert_eq;
++
++use super::PreToolUseHandlerData;
++use super::PreToolUseRequest;
++use super::parse_completed;
++use super::run;
++use crate::engine::ClaudeHooksEngine;
++use crate::engine::CommandShell;
++use crate::engine::ConfiguredHandler;
++use crate::engine::ConfiguredHandlerKind;
++use crate::engine::HandlerRunResult;
++use crate::engine::command_runner::CommandHookRuntime;
++use crate::mcp::HookMcpCall;
++use crate::mcp::HookMcpExecutor;
++
++#[cfg(unix)]
++#[tokio::test]
++async fn synchronous_timeout_blocks_and_discards_another_hooks_rewrite() {
++    let temp = tempfile::tempdir().expect("temporary hook directory");
++    let mut timed_out = handler(temp.path(), "sleep 30");
++    timed_out.timeout_sec = 1;
++    let mut rewrite = handler(
++        temp.path(),
++        r#"printf '%s' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","updatedInput":{"command":"echo rewritten"}}}'"#,
++    );
++    rewrite.display_order = 1;
++    let (engine, _receiver) = engine(vec![timed_out, rewrite], shell());
++
++    let outcome = run(&engine, request(temp.path())).await;
++
++    assert_eq!(
++        (
++            outcome.should_block,
++            outcome.block_reason,
++            outcome.updated_input
++        ),
++        (
++            true,
++            Some("PreToolUse hook failed: hook timed out after 1s".to_string()),
++            None,
++        )
++    );
++    assert_eq!(
++        outcome
++            .hook_events
++            .iter()
++            .map(|event| event.run.status)
++            .collect::<Vec<_>>(),
++        vec![HookRunStatus::Failed, HookRunStatus::Completed]
++    );
++    assert_eq!(
++        outcome.hook_events[0].run.entries,
++        vec![HookOutputEntry {
++            kind: HookOutputEntryKind::Error,
++            text: "hook timed out after 1s".to_string(),
++        }]
++    );
++}
++
++#[tokio::test]
++async fn synchronous_spawn_failure_blocks_tool_use() {
++    let temp = tempfile::tempdir().expect("temporary hook directory");
++    let missing_shell = CommandShell {
++        program: temp
++            .path()
++            .join("missing-shell")
++            .to_string_lossy()
++            .into_owned(),
++        args: Vec::new(),
++    };
++    let (engine, _receiver) = engine(vec![handler(temp.path(), "echo hook")], missing_shell);
++
++    let outcome = run(&engine, request(temp.path())).await;
++
++    let error = &outcome.hook_events[0].run.entries[0].text;
++    assert_eq!(
++        (
++            outcome.should_block,
++            outcome.block_reason,
++            outcome.updated_input
++        ),
++        (true, Some(format!("PreToolUse hook failed: {error}")), None)
++    );
++    assert_eq!(outcome.hook_events[0].run.status, HookRunStatus::Failed);
++    assert_eq!(
++        outcome.hook_events[0].run.entries[0].kind,
++        HookOutputEntryKind::Error
++    );
++}
++
++#[test]
++fn synchronous_io_failure_ignores_partial_output_and_blocks() {
++    let temp = tempfile::tempdir().expect("temporary hook directory");
++    let parsed = parse_completed(
++        &handler(temp.path(), "echo hook"),
++        HandlerRunResult {
++            started_at: 1,
++            completed_at: 2,
++            duration_ms: 1,
++            exit_code: Some(0),
++            stdout: r#"{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","updatedInput":{"command":"echo rewritten"}}}"#.to_string(),
++            stderr: String::new(),
++            error: Some("failed to write hook stdin: I/O failure".to_string()),
++        },
++        /*turn_id*/ None,
++    );
++
++    assert_eq!(
++        parsed.data,
++        PreToolUseHandlerData {
++            should_block: true,
++            block_reason: Some(
++                "PreToolUse hook failed: failed to write hook stdin: I/O failure".to_string()
++            ),
++            additional_contexts_for_model: Vec::new(),
++            updated_input: None,
++        }
++    );
++    assert_eq!(parsed.completed.run.status, HookRunStatus::Failed);
++}
++
++#[cfg(unix)]
++#[tokio::test]
++async fn asynchronous_timeout_remains_advisory() {
++    let temp = tempfile::tempdir().expect("temporary hook directory");
++    let mut advisory = handler(temp.path(), "sleep 30");
++    advisory.timeout_sec = 1;
++    if let ConfiguredHandlerKind::Command { r#async, .. } = &mut advisory.kind {
++        *r#async = true;
++    }
++    let parsed = parse_completed(
++        &advisory,
++        HandlerRunResult {
++            started_at: 1,
++            completed_at: 2,
++            duration_ms: 1000,
++            exit_code: None,
++            stdout: String::new(),
++            stderr: String::new(),
++            error: Some("hook timed out after 1s".to_string()),
++        },
++        /*turn_id*/ None,
++    );
++    assert_eq!(parsed.data, PreToolUseHandlerData::default());
++    let (engine, receiver) = engine(vec![advisory], shell());
++
++    let outcome = run(&engine, request(temp.path())).await;
++
++    assert_eq!(
++        (
++            outcome.should_block,
++            outcome.block_reason,
++            outcome.updated_input
++        ),
++        (false, None, None)
++    );
++    let completed = tokio::time::timeout(Duration::from_secs(10), receiver.recv())
++        .await
++        .expect("asynchronous hook finished")
++        .expect("hook completion");
++    assert_eq!(completed.run.status, HookRunStatus::Failed);
++    assert_eq!(
++        completed.run.entries,
++        vec![HookOutputEntry {
++            kind: HookOutputEntryKind::Error,
++            text: "hook timed out after 1s".to_string(),
++        }]
++    );
++    engine.command_runtime.shutdown().await;
++}
++
++fn handler(cwd: &std::path::Path, command: &str) -> ConfiguredHandler {
++    ConfiguredHandler {
++        builtin: false,
++        event_name: HookEventName::PreToolUse,
++        matcher: Some("^Bash$".to_string()),
++        timeout_sec: 5,
++        status_message: None,
++        additional_context_limit: Default::default(),
++        source_path: AbsolutePathBuf::try_from(cwd.join("hooks.json"))
++            .expect("absolute path")
++            .into(),
++        source: HookSource::User,
++        display_order: 0,
++        kind: ConfiguredHandlerKind::Command {
++            command: command.to_string(),
++            r#async: false,
++            env: HashMap::new(),
++        },
++    }
++}
++
++fn request(cwd: &std::path::Path) -> PreToolUseRequest {
++    PreToolUseRequest {
++        session_id: ThreadId::new(),
++        turn_id: "turn-1".to_string(),
++        subagent: None,
++        cwd: AbsolutePathBuf::try_from(cwd).expect("absolute path"),
++        transcript_path: None,
++        model: "gpt-test".to_string(),
++        permission_mode: "default".to_string(),
++        tool_name: "Bash".to_string(),
++        matcher_aliases: Vec::new(),
++        tool_use_id: "tool-call-1".to_string(),
++        tool_input: serde_json::json!({ "command": "echo original" }),
++    }
++}
++
++#[cfg(unix)]
++fn shell() -> CommandShell {
++    CommandShell {
++        program: "/bin/sh".to_string(),
++        args: vec!["-c".to_string()],
++    }
++}
++
++fn engine(
++    handlers: Vec<ConfiguredHandler>,
++    shell: CommandShell,
++) -> (
++    ClaudeHooksEngine,
++    async_channel::Receiver<HookCompletedEvent>,
++) {
++    let (sender, receiver) = async_channel::unbounded();
++    let runtime = CommandHookRuntime::new(
++        shell,
++        Arc::new(std::env::vars_os().collect()),
++        ThreadId::new(),
++        sender,
++    );
++    let mut engine = ClaudeHooksEngine::new(
++        /*enabled*/ false,
++        /*bypass_hook_trust*/ false,
++        /*config_layer_stack*/ None,
++        Vec::new(),
++        Vec::new(),
++        runtime,
++        Arc::new(UnusedMcpExecutor),
++    );
++    engine.handlers = handlers;
++    (engine, receiver)
++}
++
++struct UnusedMcpExecutor;
++
++impl HookMcpExecutor for UnusedMcpExecutor {
++    fn execute(&self, _call: HookMcpCall) -> BoxFuture<'_, anyhow::Result<String>> {
++        Box::pin(async { panic!("command hook must not invoke MCP") })
++    }
++}

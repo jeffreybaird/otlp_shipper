@@ -10,11 +10,49 @@ defmodule OtlpShipper.Transport do
   lost after acceptance can lead to duplicates. Partial acceptance is never retried.
   Response bodies are bounded and never included in diagnostics or error details.
   """
-  alias OtlpShipper.{Config, Retry}
+  alias OtlpShipper.{Config, Retry, TraceSuppression}
 
   @type result ::
           :ok | {:ok, :partial, non_neg_integer()} | {:error, atom()} | {:error, atom(), term()}
+  @typep result_observer :: (result() -> term())
   @retry_statuses [429, 502, 503, 504]
+
+  @doc """
+  Exports one encoded request within a caller's existing monotonic deadline.
+
+  `deadline` uses `System.monotonic_time(:millisecond)`, whose values may be
+  negative. The effective budget is the lesser of the remaining deadline and
+  `config.timeout`; compression, HTTP, and retry waits share that budget. An
+  expired deadline returns `{:error, :timeout}` without sending a request.
+
+  Records one logical request outcome after retries. Trace partial responses with
+  rejected counts greater than `count` are invalid and never retried. This function
+  does not install a tracing SDK adapter or sampler. HTTP workers mark exporter
+  work for the consumer-configured `OtlpShipper.TraceSampler` wrapper.
+  """
+  @spec export_until(Config.t(), atom(), binary(), non_neg_integer(), integer()) :: result()
+  def export_until(config, finch, body, count, deadline),
+    do: export_until(config, finch, body, count, deadline, fn _result -> :ok end)
+
+  @doc false
+  @spec export_until(
+          Config.t(),
+          atom(),
+          binary(),
+          non_neg_integer(),
+          integer(),
+          result_observer()
+        ) ::
+          result()
+  # Commit the batch owner's terminal result before potentially blocking telemetry.
+  # The internal observer must be bounded, must not raise, and receives no payload.
+  def export_until(%Config{} = config, finch, body, count, deadline, on_result)
+      when is_binary(body) and is_integer(count) and count >= 0 and is_integer(deadline) and
+             is_function(on_result, 1) do
+    started = System.monotonic_time(:millisecond)
+    deadline = min(deadline, started + config.timeout)
+    export_with_deadline(config, finch, body, count, started, deadline, on_result)
+  end
 
   @doc "Exports an encoded request, recording one outcome and any rejected/dropped records."
   @spec export(Config.t(), atom(), binary(), non_neg_integer()) :: result()
@@ -22,17 +60,25 @@ defmodule OtlpShipper.Transport do
       when is_binary(body) and is_integer(count) and count >= 0 do
     started = System.monotonic_time(:millisecond)
 
-    result =
-      if byte_size(body) > config.max_batch_bytes do
-        {:error, :batch_too_large}
-      else
-        task = Task.async(fn -> safely_export(config, finch, body, started + config.timeout) end)
+    export_with_deadline(
+      config,
+      finch,
+      body,
+      count,
+      started,
+      started + config.timeout,
+      fn _result -> :ok end
+    )
+  end
 
-        case Task.yield(task, config.timeout) || Task.shutdown(task, :brutal_kill) do
-          {:ok, result} -> result
-          _ -> {:error, :timeout}
-        end
-      end
+  # Share terminal accounting across fresh-budget and existing-deadline exports.
+  defp export_with_deadline(config, finch, body, count, started, deadline, on_result) do
+    result =
+      config
+      |> bounded_export(finch, body, deadline)
+      |> validate_trace_rejections(config.signal, count)
+
+    on_result.(result)
 
     record_outcome(
       config.signal,
@@ -44,6 +90,38 @@ defmodule OtlpShipper.Transport do
 
     result
   end
+
+  # Bound the linked worker from before compression through its final retry.
+  defp bounded_export(config, finch, body, deadline) do
+    cond do
+      byte_size(body) > config.max_batch_bytes ->
+        {:error, :batch_too_large}
+
+      deadline <= System.monotonic_time(:millisecond) ->
+        {:error, :timeout}
+
+      true ->
+        task = Task.async(fn -> suppressed_export(config, finch, body, deadline) end)
+
+        remaining = max(deadline - System.monotonic_time(:millisecond), 0)
+
+        case Task.yield(task, remaining) || Task.shutdown(task, :brutal_kill) do
+          {:ok, result} -> result
+          _ -> {:error, :timeout}
+        end
+    end
+  end
+
+  # Mark this actual HTTP worker; context attached in its parent is not inherited.
+  defp suppressed_export(config, finch, body, deadline) do
+    TraceSuppression.with_suppression(fn -> safely_export(config, finch, body, deadline) end)
+  end
+
+  # A trace collector cannot truthfully reject more spans than this request sent.
+  defp validate_trace_rejections({:ok, :partial, rejected}, :traces, count)
+       when rejected > count, do: {:error, :invalid_response}
+
+  defp validate_trace_rejections(result, _signal, _count), do: result
 
   defp safely_export(config, finch, body, deadline) do
     Logger.metadata(domain: [:otlp_shipper])
@@ -74,14 +152,7 @@ defmodule OtlpShipper.Transport do
 
       case classify(response, config.signal) do
         {:retry, _error, headers} when number < config.max_retries ->
-          delay = retry_delay(headers, number, config)
-
-          if delay < deadline - System.monotonic_time(:millisecond) do
-            Process.sleep(delay)
-            attempt(request, config, finch, deadline, number + 1)
-          else
-            {:error, :timeout}
-          end
+          retry(request, config, finch, deadline, number, headers)
 
         {:retry, error, _} ->
           error
@@ -89,6 +160,17 @@ defmodule OtlpShipper.Transport do
         result ->
           result
       end
+    end
+  end
+
+  defp retry(request, config, finch, deadline, number, headers) do
+    delay = retry_delay(headers, number, config)
+
+    if delay < deadline - System.monotonic_time(:millisecond) do
+      Process.sleep(delay)
+      attempt(request, config, finch, deadline, number + 1)
+    else
+      {:error, :timeout}
     end
   end
 
@@ -140,18 +222,7 @@ defmodule OtlpShipper.Transport do
   defp transport_reason(_), do: :request_failed
 
   defp decode_response(body, signal) do
-    {module, type, rejected_key} =
-      case signal do
-        :logs ->
-          {:otlp_shipper_logs_service,
-           :"opentelemetry.proto.collector.logs.v1.ExportLogsServiceResponse",
-           :rejected_log_records}
-
-        :metrics ->
-          {:otlp_shipper_metrics_service,
-           :"opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceResponse",
-           :rejected_data_points}
-      end
+    {module, type, rejected_key} = response_schema(signal)
 
     case module.decode_msg(body, type) do
       %{partial_success: partial} ->
@@ -169,6 +240,23 @@ defmodule OtlpShipper.Transport do
   rescue
     _ -> {:error, :invalid_response}
   end
+
+  # Select the generated service codec and signal-specific rejection field.
+  defp response_schema(:logs),
+    do:
+      {:otlp_shipper_logs_service,
+       :"opentelemetry.proto.collector.logs.v1.ExportLogsServiceResponse", :rejected_log_records}
+
+  defp response_schema(:metrics),
+    do:
+      {:otlp_shipper_metrics_service,
+       :"opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceResponse",
+       :rejected_data_points}
+
+  defp response_schema(:traces),
+    do:
+      {:otlp_shipper_trace_service,
+       :"opentelemetry.proto.collector.trace.v1.ExportTraceServiceResponse", :rejected_spans}
 
   defp retry_delay(headers, number, config) do
     header =

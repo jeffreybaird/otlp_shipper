@@ -7,8 +7,8 @@ defmodule OtlpShipper.Metrics.Definition do
   Counter measurements may be any non-nil value and contribute one event.
   Numeric metrics require finite signed-64-bit integers or doubles.
   """
-  alias Telemetry.Metrics.{Counter, Sum, LastValue, Distribution, Summary}
   alias OtlpShipper.Value
+  alias Telemetry.Metrics.{Counter, Distribution, LastValue, Sum, Summary}
 
   @types %{Counter => :counter, Sum => :sum, LastValue => :gauge, Distribution => :histogram}
   @units %{
@@ -34,17 +34,7 @@ defmodule OtlpShipper.Metrics.Definition do
   """
   @spec new(list()) :: {:ok, [map()]} | {:error, atom()} | {:error, atom(), atom()}
   def new(metrics) when is_list(metrics) do
-    Enum.reduce_while(metrics, {:ok, []}, fn metric, {:ok, definitions} ->
-      case compile_definition(metric) do
-        {:ok, definition} ->
-          if Enum.any?(definitions, &(&1.name == definition.name)),
-            do: {:halt, {:error, :duplicate_metric_name}},
-            else: {:cont, {:ok, [definition | definitions]}}
-
-        error ->
-          {:halt, error}
-      end
-    end)
+    Enum.reduce_while(metrics, {:ok, []}, &append_definition/2)
     |> case do
       {:ok, definitions} -> {:ok, Enum.reverse(definitions)}
       error -> error
@@ -102,6 +92,19 @@ defmodule OtlpShipper.Metrics.Definition do
     _, _ -> {:error, :callback_failed}
   end
 
+  defp append_definition(metric, {:ok, definitions}) do
+    case compile_definition(metric) do
+      {:ok, definition} -> append_unique_definition(definition, definitions)
+      error -> {:halt, error}
+    end
+  end
+
+  defp append_unique_definition(definition, definitions) do
+    if Enum.any?(definitions, &(&1.name == definition.name)),
+      do: {:halt, {:error, :duplicate_metric_name}},
+      else: {:cont, {:ok, [definition | definitions]}}
+  end
+
   defp compile_definition(%Summary{}), do: {:error, :unsupported_metric, :use_distribution}
 
   defp compile_definition(%{__struct__: type} = metric) when is_map_key(@types, type) do
@@ -123,36 +126,38 @@ defmodule OtlpShipper.Metrics.Definition do
   defp compile_definition(_), do: {:error, :invalid_metric}
 
   defp validate_fields(metric) do
-    valid_name = is_list(metric.name) and metric.name != [] and Enum.all?(metric.name, &is_atom/1)
-
-    valid_event =
-      is_list(metric.event_name) and metric.event_name != [] and
-        Enum.all?(metric.event_name, &is_atom/1)
-
-    own_event = match?([:otlp_shipper | _], metric.event_name)
-
-    valid_tags =
-      (is_list(metric.tags) and Enum.all?(metric.tags, &(is_atom(&1) or is_binary(&1)))) or
-        is_function(metric.tags, 1)
-
-    valid_keep = is_nil(metric.keep) or is_function(metric.keep, 1) or is_function(metric.keep, 2)
-
-    valid_description =
-      is_nil(metric.description) or
-        (is_binary(metric.description) and String.valid?(metric.description))
-
     cond do
-      own_event ->
+      match?([:otlp_shipper | _], metric.event_name) ->
         {:error, :recursive_metric_event}
 
-      valid_name and valid_event and valid_tags and valid_keep and valid_description and
-        is_function(metric.tag_values, 1) and Keyword.keyword?(metric.reporter_options) ->
+      valid_fields?(metric) ->
         :ok
 
       true ->
         {:error, :invalid_metric}
     end
   end
+
+  defp valid_fields?(metric) do
+    valid_atom_path?(metric.name) and valid_atom_path?(metric.event_name) and
+      valid_tag_definition?(metric.tags) and valid_keep?(metric.keep) and
+      valid_description?(metric.description) and is_function(metric.tag_values, 1) and
+      Keyword.keyword?(metric.reporter_options)
+  end
+
+  defp valid_atom_path?(path),
+    do: is_list(path) and path != [] and Enum.all?(path, &is_atom/1)
+
+  defp valid_tag_definition?(tags) when is_list(tags),
+    do: Enum.all?(tags, &(is_atom(&1) or is_binary(&1)))
+
+  defp valid_tag_definition?(tags), do: is_function(tags, 1)
+
+  defp valid_keep?(keep),
+    do: is_nil(keep) or is_function(keep, 1) or is_function(keep, 2)
+
+  defp valid_description?(nil), do: true
+  defp valid_description?(description), do: is_binary(description) and String.valid?(description)
 
   defp boundaries(Distribution, options) do
     bounds = Keyword.get(options, :buckets)
@@ -187,7 +192,7 @@ defmodule OtlpShipper.Metrics.Definition do
     do: value >= -9_223_372_036_854_775_808 and value <= 9_223_372_036_854_775_807
 
   defp numeric?(value) when is_float(value),
-    do: value == value and abs(value) <= 1.7976931348623157e308
+    do: abs(value) <= 1.797_693_134_862_315_7e308
 
   defp numeric?(_), do: false
 
