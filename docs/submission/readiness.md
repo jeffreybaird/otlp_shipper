@@ -10,6 +10,9 @@ The source repository remains private. Public consumers can fetch the Hex source
 archive and read HexDocs, but the configured GitHub source/support links require
 repository access. A visibility change is a separate owner action.
 
+The 0.2.0 candidate is prepared separately; see [candidate evidence](candidate-0.2.0.md).
+It has not been published.
+
 ## Subsequent releases
 
 1. Obtain authorization for the target version and finish review/merge. Prior
