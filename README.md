@@ -4,12 +4,14 @@ An Elixir package for bounded OTLP/HTTP logs, `Telemetry.Metrics`, and SDK-compa
 trace export. Finch provides HTTP connection pooling. Logs and metrics work without
 the OpenTelemetry SDK; tracing retains the canonical API, SDK, and instrumentation.
 
-**This source tree prepares 0.2.0; it has not been published.** See the
+**[0.2.0 is available on Hex](https://hex.pm/packages/otlp_shipper/0.2.0).**
+[API documentation](https://hexdocs.pm/otlp_shipper/0.2.0/) is public. The GitHub
+source repository is currently private. See the
 [migration guide](docs/migration.md) for trace exporter replacement and rollback.
 
-**[0.1.1 is available on Hex](https://hex.pm/packages/otlp_shipper/0.1.1).**
-[API documentation](https://hexdocs.pm/otlp_shipper/0.1.1/) is public. The GitHub
-source repository is currently private.
+**This source tree prepares 0.2.1; it has not been published.** The patch makes
+log and metric instrumentation scopes report the loaded `otlp_shipper` application
+version instead of `0.1.0`. Original trace scopes remain unchanged.
 
 ## Metrics setup
 
@@ -51,13 +53,13 @@ Logger.info("checkout complete", order_id: "example-42")
 
 ## Installation and compatibility
 
-Add the package to your `mix.exs` dependencies:
+For the 0.2.1 release, add the package to your `mix.exs` dependencies:
 
 ```elixir
-{:otlp_shipper, "~> 0.1.1"}
+{:otlp_shipper, "~> 0.2.1"}
 ```
 
-Run `mix deps.get`. The snippets above show standalone trees; in an application,
+The dependency becomes available when 0.2.1 is published. Then run `mix deps.get`. The snippets above show standalone trees; in an application,
 add each child to your existing supervisor instead of starting an extra root.
 
 Elixir 1.19+ and OTP 28+ are the supported baseline. CI checks Elixir 1.19.0 / OTP
@@ -211,8 +213,8 @@ No tracing or Logger process configuration is changed by this handler.
 
 ## When to use another exporter
 
-For version 0.1.1, use the OpenTelemetry SDK/exporter for traces. Unsupported metric
-types and units are rejected at startup. Before adopting the logs handler, compare
+Use another exporter when you need trace protocols or SDK versions outside the
+compatibility described below. Unsupported metric types and units are rejected at startup. Before adopting the logs handler, compare
 [`opentelemetry_experimental`](https://hex.pm/packages/opentelemetry_experimental)
 with this package's Logger integration and delivery contracts; avoid exporting each
 event through both. The September 12, 2026 release-preparation recheck still found 0.5.1, the
@@ -230,8 +232,8 @@ Do not use this package when durable or exactly-once log delivery is required.
 
 The core accepts OTLP message maps. `OtlpShipper.LogHandler` converts Logger events;
 `OtlpShipper.MetricsReporter` aggregates metric definitions. Both signals use the core independently.
-Public version 0.1.1 does not export traces. The 0.2.0 candidate adds
-`OtlpShipper.TraceExporter`, using the existing tracing API, SDK, and instrumentation.
+Version 0.2.0 adds `OtlpShipper.TraceExporter`, using the existing tracing API, SDK,
+and instrumentation.
 The SDK owns the span queue; shipper converts and exports its batches within bounded
 requests and deadlines.
 
@@ -383,18 +385,17 @@ at build time and is not a runtime application. Collector response decoding is
 included to detect partial rejection; production does not ingest encoded telemetry.
 
 Repository development and release guidance lives under `docs/`.
-Version 0.1.1 was published on September 13, 2026. See
-`docs/submission/release-0.1.1.md` for published-artifact verification and
-`docs/submission/readiness.md` for future release guidance. Building a package
-does not publish it; further uploads require release authorization.
+Version 0.2.0 was published on September 21, 2026. Version 0.2.1 is an unpublished
+patch candidate. See `docs/submission/readiness.md` for release guidance. Building
+a package does not publish it; further uploads require release authorization.
 
 
-## Unreleased trace protocol core
+## Trace protocol core
 
-The development branch adds low-level OTLP trace conversion, encoding, and bounded
-HTTP export. These core APIs are not in Hex 0.1.1; the SDK integration builds on them.
-Keep the canonical SDK/API and instrumentation. The unreleased SDK adapter and
-consumer-configured sampling wrapper are described below.
+Version 0.2.0 provides low-level OTLP trace conversion, encoding, and bounded HTTP
+export. The SDK integration builds on these core APIs. Keep the canonical SDK/API
+and instrumentation. The SDK adapter and consumer-configured sampling wrapper are
+described below.
 
 `OtlpShipper.Config.transport/3` resolves trace transport settings without creating a
 resource. It rejects service/resource identity, queue, flush, and shutdown options;
@@ -423,16 +424,16 @@ remote non-delivery. Diagnostic handlers execute within the deadline; forced
 cancellation can omit their final events, while returned counters retain committed
 outcomes and never recount accepted chunks as unsent.
 
-## Unreleased SDK trace integration
+## SDK trace integration
 
-The development adapter targets **SDK 1.7.0 / API 1.5.0**. Keep those packages and
+The adapter targets **SDK 1.7.0 / API 1.5.0**. Keep those packages and
 existing instrumentation in the consumer. The package declares the SDK optional with `runtime: false`, preserving compile
 ordering while leaving startup to the consumer. Logs/metrics consumers do not
 acquire it. `OtlpShipper.TraceExporter` and
 `OtlpShipper.TraceSampler` are compiled only when their SDK behaviours are available.
 Adding the SDK to an existing consumer requires recompiling `otlp_shipper`.
 Initialization rejects unverified SDK/API versions instead of assuming record
-compatibility. This integration is not in Hex 0.1.1.
+compatibility.
 
 The consumer owns its supervisor, Finch pool, SDK provider, and batch processor.
 Disable the SDK's default exporter in consumer configuration if using only the

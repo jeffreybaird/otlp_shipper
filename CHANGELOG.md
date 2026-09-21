@@ -1,11 +1,20 @@
 # Changelog
 
-## 0.2.0 — candidate, not published
+## 0.2.1 — release candidate
+
+- Derive the logs and metrics instrumentation scope version from the installed
+  `otlp_shipper` OTP application metadata instead of hardcoding `0.1.0`.
+  Collectors and the hub now receive the actual package version for new telemetry.
+  Existing stored records are unchanged; trace scopes retain their original
+  instrumentation identity.
+- Validate the current package scope version in Collector conformance checks.
+
+## 0.2.0 — 2026-09-21
 
 - Add the optional SDK 1.7.0/API 1.5.0 trace exporter, bounded callback conversion,
   consumer-owned pool lifecycle helper, and delegating sampler wrapper. SDK/API
   and instrumentation remain consumer-owned; the package does not configure them
-  globally. Trace integration is part of this unpublished candidate.
+  globally. Trace integration is available starting with this release.
 - Leave SDK runtime startup explicitly with the consumer while preserving optional
   compilation order, enabling pool-before-SDK included application startup.
 - Verify real SDK export, cancellation, correlation, restart, sampling feedback,
@@ -21,7 +30,7 @@
   three signals, correlated logs, and canonical exporter/runtime gpb absence.
 - Extend pinned Collector conformance to SDK spans, parentage, scope/resource
   identity, event/status fields, and log correlation. Add migration and rollback
-  instructions. No new package release has been published.
+  instructions.
 
 ## 0.1.1 — 2026-09-13
 

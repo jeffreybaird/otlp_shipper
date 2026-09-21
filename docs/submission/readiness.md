@@ -1,17 +1,17 @@
 # Hex release readiness
 
-**0.1.1 is published**, as of September 13, 2026. Hex lists `jeffreybaird` as owner
-and publisher, and versioned HexDocs is available. See
-[release verification](release-0.1.1.md) for the downloaded archive checksum and
-public Hex consumer check. [candidate.md](candidate.md) preserves the original 0.1.0
-pre-publication evidence, including the unauthenticated dry-run limitation.
+**0.2.0 is published**, verified through the public Hex API on September 21, 2026.
+The registry lists its publication at 15:44:25 UTC and versioned documentation.
+See [Hex release metadata](https://hex.pm/api/packages/otlp_shipper/releases/0.2.0).
+Earlier [0.2.0 candidate evidence](candidate-0.2.0.md) describes pre-publication checks.
+
+The current source prepares **0.2.1**, a patch correcting the instrumentation scope
+version for logs and metrics. See [candidate evidence](candidate-0.2.1.md).
+Preparation does not upload a package or documentation.
 
 The source repository remains private. Public consumers can fetch the Hex source
-archive and read HexDocs, but the configured GitHub source/support links require
-repository access. A visibility change is a separate owner action.
-
-The 0.2.0 candidate is prepared separately; see [candidate evidence](candidate-0.2.0.md).
-It has not been published.
+archive and read HexDocs; GitHub source/support links require repository access.
+A visibility change is a separate owner action.
 
 ## Subsequent releases
 

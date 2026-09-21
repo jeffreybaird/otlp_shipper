@@ -2,7 +2,7 @@ defmodule OtlpShipper.TraceReplacementConformanceTest do
   @moduledoc false
   use ExUnit.Case, async: true
 
-  alias OtlpShipper.Conformance
+  alias OtlpShipper.{Conformance, ConformanceFixtures}
 
   @fixture File.read!(
              Path.expand("../fixtures/conformance/collector-traces-0.160.0.txt", __DIR__)
@@ -11,7 +11,7 @@ defmodule OtlpShipper.TraceReplacementConformanceTest do
 
   test "TRP-01 trace verification recognizes exact span relationships and log correlation" do
     assert Conformance.verify_traces(@fixture) == :ok
-    assert Conformance.verify(@old_fixture) == :ok
+    assert Conformance.verify(ConformanceFixtures.current_scope_version(@old_fixture)) == :ok
     assert Conformance.verify_traces(@old_fixture) == {:error, :collector_trace_output_mismatch}
     assert Conformance.verify_traces("") == {:error, :collector_trace_output_mismatch}
   end

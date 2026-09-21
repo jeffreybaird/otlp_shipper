@@ -22,7 +22,8 @@ defmodule OtlpShipper.Encoder do
 
   def encode(signal, items, resource)
       when signal in [:logs, :metrics] and is_list(items) and is_map(resource) do
-    scope = %{name: "otlp_shipper", version: "0.1.0"}
+    version = :otlp_shipper |> Application.spec(:vsn) |> to_string()
+    scope = %{name: "otlp_shipper", version: version}
 
     {module, type, message} =
       case signal do
