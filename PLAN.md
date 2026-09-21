@@ -283,7 +283,7 @@ alternative.
 | 4 | SDK compatibility probe and approved trace contracts | Complete; [decision record](docs/decisions/trace-compatibility.md), PR #16 merged |
 | 5 | Trace schemas, configuration, encoding, and HTTP conformance | Complete; PR #17 merged |
 | 6 | SDK exporter, bounded lifecycle, correlation | Complete; PR #18 merged |
-| 7 | Replacement consumer, real Collector, migration/release preparation | Local implementation/verification complete; PR pending; [work record](docs/workflows/phase-7-trace-release.md) |
+| 7 | Replacement consumer, real Collector, migration/release preparation | Complete on phase branch; [PR #19](https://github.com/jeffreybaird/otlp_shipper/pull/19) awaiting merge; [work record](docs/workflows/phase-7-trace-release.md) |
 
 Each phase is a focused branch and PR. Do not start its successor until it merges.
 Use the five-role harness for implementation: Gherkin/failing tests, independent red,
