@@ -166,3 +166,20 @@ The worktree matched the verified snapshot and was clean. Independent reviewers
 confirmed their separate scopes on that exact commit: production conformance
 (TRP-R1/R2 closed), and consumer/scripts/docs/dependencies/CI. Remote CI status is attached to [PR #19](https://github.com/jeffreybaird/otlp_shipper/pull/19).
 Later evidence-only documentation does not change packaged source.
+
+
+## Remote audit correction
+
+The first final-head CI run passed the minimum toolchain job but stopped the pinned
+job at `mix hex.audit`: Mint 1.10.0 was affected by
+[GHSA-rj5m-69wp-cxq9](https://github.com/elixir-mint/mint/security/advisories/GHSA-rj5m-69wp-cxq9),
+published September 19, 2026. CI's newer Hex audit checks security advisories;
+the local Hex audit reported retirement status only. The required gate was not
+bypassed. `mix deps.update mint` changed only the locked version/checksums to patched
+1.10.1. Fresh current/minimum release consumers already resolved 1.10.1 and passed.
+The lockfile is not packaged, so this update leaves the candidate archive unchanged.
+Existing consumers must update their own locks; the library lockfile does not
+constrain consumer resolution. The full local gate passed again after the update (166 tests, 22 doctests, 37
+scenarios, formatting/compile, Credo, Dialyzer, audit, ExDoc and Hex build).
+Verified diff SHA-256: `5290758539c60f7caf19d70d2362b84a9873feffc483f7d381c98db869d57522`.
+Final remote audit/toolchain results remain attached to PR #19.

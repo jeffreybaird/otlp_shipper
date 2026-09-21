@@ -75,3 +75,13 @@ build-only. These single-run VM snapshots do not measure allocation volume,
 retained heap after GC, steady-state throughput, or comparative dependency size.
 No performance/footprint advantage is claimed. Both reports use local Elixir
 1.19.5 / OTP 29.0.1; remote CI provides the pinned/minimum toolchain checks.
+
+
+## Dependency audit follow-up
+
+Remote CI additionally checks security advisories and caught locked Mint 1.10.0
+([upstream advisory](https://github.com/elixir-mint/mint/security/advisories/GHSA-rj5m-69wp-cxq9)).
+The repository lock is updated to patched 1.10.1. All fresh consumer reports already
+use that version. Consumers retaining an older lock must upgrade Mint themselves;
+this library's lock is not included in its archive. The archive hash and packaged
+source revision above are unchanged. Final audit evidence is on PR #19.
