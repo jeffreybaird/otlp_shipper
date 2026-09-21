@@ -39,7 +39,8 @@ ExDoc, five existing consumer modes and two replacement modes. The known upstrea
 API 1.3.0 `link/2` warning on OTP 29 remains in the minimum optional-API smoke;
 no warning suppression was added. Exact packaged source revision: `01ff8c1564224d39fc2ca1e07dcafcf83b684eb5`.
 Independent reviewers approved their separate scopes on this commit. Remote CI
-is pending; subsequent evidence-only edits do not change the archive contents. See the [work record](../workflows/phase-7-trace-release.md).
+status is attached to [PR #19](https://github.com/jeffreybaird/otlp_shipper/pull/19);
+subsequent evidence-only edits do not change the archive contents. See the [work record](../workflows/phase-7-trace-release.md).
 
 ## Publication boundary
 

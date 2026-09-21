@@ -164,5 +164,5 @@ No analysis rules, assertions, or required checks were suppressed.
 Implementation revision: `01ff8c1564224d39fc2ca1e07dcafcf83b684eb5`.
 The worktree matched the verified snapshot and was clean. Independent reviewers
 confirmed their separate scopes on that exact commit: production conformance
-(TRP-R1/R2 closed), and consumer/scripts/docs/dependencies/CI. Remote CI remains
-pending. Later evidence-only documentation does not change packaged source.
+(TRP-R1/R2 closed), and consumer/scripts/docs/dependencies/CI. Remote CI status is attached to [PR #19](https://github.com/jeffreybaird/otlp_shipper/pull/19).
+Later evidence-only documentation does not change packaged source.
