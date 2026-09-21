@@ -53,13 +53,13 @@ Logger.info("checkout complete", order_id: "example-42")
 
 ## Installation and compatibility
 
-Add the package to your `mix.exs` dependencies:
+For the 0.2.1 release, add the package to your `mix.exs` dependencies:
 
 ```elixir
-{:otlp_shipper, "~> 0.2.0"}
+{:otlp_shipper, "~> 0.2.1"}
 ```
 
-Run `mix deps.get`. The snippets above show standalone trees; in an application,
+The dependency becomes available when 0.2.1 is published. Then run `mix deps.get`. The snippets above show standalone trees; in an application,
 add each child to your existing supervisor instead of starting an extra root.
 
 Elixir 1.19+ and OTP 28+ are the supported baseline. CI checks Elixir 1.19.0 / OTP

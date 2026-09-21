@@ -46,7 +46,7 @@ prevents upload. No authentication changes were made.
 ## Artifact inspection
 
 `otlp_shipper-0.2.1.tar`: 90,624 bytes, SHA256
-`b5b4e95c2c027ddc8f7d0e4b6984434acdd0fd187b519a3174ac8367099751bf`.
+`61f34ffe6c6ae8d7c509eeee231875d3441d35e1e7a8b216653534b35ffff8ef`.
 49 packaged files, MIT metadata, unchanged dependency constraints. Source, schema
 provenance/licenses, generated-code build task, migration guide and conformance
 assets are included. Tests, scripts, agent configuration, dependencies, caches and
@@ -75,6 +75,14 @@ known upstream API 1.3.0 warning on OTP 29; no suppression or dependency change.
 
 These reports are actual execution evidence, not the synthetic validator fixture.
 The elapsed/memory measurements are descriptive and are not a benchmark.
+
+The initial full matrix used archive SHA256
+`b5b4e95c2c027ddc8f7d0e4b6984434acdd0fd187b519a3174ac8367099751bf`.
+The user then requested installation examples require `~> 0.2.1`. Only packaged
+`README.md` and `docs/migration.md` changed. All runtime/build/schema files remain
+byte-identical to the matrix-tested archive. Rebuilt ExDoc, Hex archive and publish
+dry run passed; all 49 final archive files match source. The final checksum is
+recorded above. No runtime test changes or functionality changes occurred.
 
 Final source revision, independent review and pinned/minimum CI status are attached
 to [PR #22](https://github.com/jeffreybaird/otlp_shipper/pull/22). The candidate was
