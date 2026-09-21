@@ -10,7 +10,8 @@ if config_env() == :test do
       "docs/features/trace-compatibility.feature",
       "docs/features/trace-protocol.feature",
       "docs/features/trace-sdk.feature",
-      "docs/features/trace-replacement.feature"
+      "docs/features/trace-replacement.feature",
+      "docs/features/scope-version.feature"
     ],
     strict: true
 end

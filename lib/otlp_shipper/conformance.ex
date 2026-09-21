@@ -84,6 +84,8 @@ defmodule OtlpShipper.Conformance do
   @doc false
   @spec verify(String.t()) :: :ok | {:error, :collector_output_mismatch}
   def verify(output) do
+    version = :otlp_shipper |> Application.spec(:vsn) |> to_string()
+
     logs = [
       "Body: Str(otlp-shipper-conformance-log)",
       "conformance: Bool(true)",
@@ -129,7 +131,7 @@ defmodule OtlpShipper.Conformance do
 
     if contains_lines?(output, [
          "service.name: Str(otlp-shipper-conformance)",
-         "InstrumentationScope otlp_shipper 0.1.0"
+         "InstrumentationScope otlp_shipper #{version}"
        ]) and
          Enum.any?(log_blocks, fn [_, block] -> contains_lines?(block, logs) end) and
          length(blocks) == 4 and

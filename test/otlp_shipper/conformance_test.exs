@@ -1,6 +1,6 @@
 defmodule OtlpShipper.ConformanceTest do
   use ExUnit.Case, async: true
-  alias OtlpShipper.Conformance
+  alias OtlpShipper.{Conformance, ConformanceFixtures}
 
   @fixture File.read!(Path.expand("../fixtures/conformance/collector-0.160.0.txt", __DIR__))
   @combined_fixture @fixture <>
@@ -12,7 +12,7 @@ defmodule OtlpShipper.ConformanceTest do
                       )
 
   test "recognizes the real Collector's decoded signals" do
-    assert :ok = Conformance.verify(@fixture)
+    assert :ok = Conformance.verify(ConformanceFixtures.current_scope_version(@fixture))
 
     for {before, after_value} <- [
           {"SeverityNumber: Info2(10)", "SeverityNumber: Error(17)"},
@@ -29,11 +29,17 @@ defmodule OtlpShipper.ConformanceTest do
           {"service.name: Str(otlp-shipper-conformance)", "service.name: Str(other)"}
         ] do
       assert {:error, :collector_output_mismatch} =
-               Conformance.verify(String.replace(@fixture, before, after_value))
+               Conformance.verify(
+                 String.replace(
+                   ConformanceFixtures.current_scope_version(@fixture),
+                   before,
+                   after_value
+                 )
+               )
     end
 
     swapped =
-      @fixture
+      ConformanceFixtures.current_scope_version(@fixture)
       |> String.replace("Value: 21\n", "Value: swapped\n")
       |> String.replace("Value: 3\n", "Value: 21\n")
       |> String.replace("Value: swapped\n", "Value: 3\n")
@@ -71,9 +77,14 @@ defmodule OtlpShipper.ConformanceTest do
       send(owner, {:command, executable, args, opts})
 
       case {executable, args} do
-        {"docker", ["port" | _]} -> {"127.0.0.1:49152\n", 0}
-        {"docker", ["logs" | _]} -> {@combined_fixture, 0}
-        _ -> {"", 0}
+        {"docker", ["port" | _]} ->
+          {"127.0.0.1:49152\n", 0}
+
+        {"docker", ["logs" | _]} ->
+          {ConformanceFixtures.current_scope_version(@combined_fixture), 0}
+
+        _ ->
+          {"", 0}
       end
     end
 
@@ -120,7 +131,7 @@ defmodule OtlpShipper.ConformanceTest do
           {"127.0.0.1:49152", 0}
 
         {"docker", ["logs" | _]} ->
-          {@combined_fixture, 0}
+          {ConformanceFixtures.current_scope_version(@combined_fixture), 0}
 
         {"mix", _} ->
           {"synthetic fixture failure", 1}

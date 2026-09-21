@@ -3,7 +3,7 @@ defmodule OtlpShipper.Acceptance.TraceReplacementSteps do
   use Cucumberex.DSL
 
   import ExUnit.Assertions
-  alias OtlpShipper.Conformance
+  alias OtlpShipper.{Conformance, ConformanceFixtures}
 
   @fixture_root Path.expand("../../test/fixtures/conformance", __DIR__)
 
@@ -36,7 +36,12 @@ defmodule OtlpShipper.Acceptance.TraceReplacementSteps do
   end)
 
   when_("I run conformance with only logs and metrics before command failure", fn world ->
-    legacy = File.read!(Path.join(@fixture_root, "collector-0.160.0.txt"))
+    legacy =
+      @fixture_root
+      |> Path.join("collector-0.160.0.txt")
+      |> File.read!()
+      |> ConformanceFixtures.current_scope_version()
+
     reads = :atomics.new(1, [])
     owner = self()
 
