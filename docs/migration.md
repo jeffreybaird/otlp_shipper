@@ -1,8 +1,9 @@
-# Migrating trace export to otlp_shipper 0.2.0
+# Migrating trace export to otlp_shipper 0.2.x
 
-Version 0.2.0 is a local release candidate, not a published Hex release. Public
-0.1.1 supports logs and metrics only. Evaluate this candidate from its reviewed
-source or unpacked Hex archive before changing a production release.
+Version 0.2.0 is available on Hex and includes SDK-compatible trace export. The
+examples below use that published release series. Version 0.2.1 is an unpublished
+patch candidate that corrects log and metric instrumentation scope versions; it
+preserves original trace scopes and requires no trace migration changes.
 
 ## What changes
 
@@ -24,10 +25,10 @@ The consumer owns the global SDK and its configuration. Make it an included
 application so OTP loads it without starting it before the Finch pool:
 
 ```elixir
-# Consumer mix.exs; use a reviewed checkout/archive until 0.2.0 is published.
+# Consumer mix.exs
 defp deps do
   [
-    {:otlp_shipper, path: "vendor/otlp_shipper"},
+    {:otlp_shipper, "~> 0.2.0"},
     {:opentelemetry, "== 1.7.0", runtime: false},
     {:opentelemetry_api, "== 1.5.0"},
     {:opentelemetry_finch, "== 0.2.0"}
