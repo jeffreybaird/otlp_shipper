@@ -3,6 +3,13 @@ defmodule OtlpShipper.ConformanceTest do
   alias OtlpShipper.Conformance
 
   @fixture File.read!(Path.expand("../fixtures/conformance/collector-0.160.0.txt", __DIR__))
+  @combined_fixture @fixture <>
+                      File.read!(
+                        Path.expand(
+                          "../fixtures/conformance/collector-traces-0.160.0.txt",
+                          __DIR__
+                        )
+                      )
 
   test "recognizes the real Collector's decoded signals" do
     assert :ok = Conformance.verify(@fixture)
@@ -65,7 +72,7 @@ defmodule OtlpShipper.ConformanceTest do
 
       case {executable, args} do
         {"docker", ["port" | _]} -> {"127.0.0.1:49152\n", 0}
-        {"docker", ["logs" | _]} -> {@fixture, 0}
+        {"docker", ["logs" | _]} -> {@combined_fixture, 0}
         _ -> {"", 0}
       end
     end
@@ -113,7 +120,7 @@ defmodule OtlpShipper.ConformanceTest do
           {"127.0.0.1:49152", 0}
 
         {"docker", ["logs" | _]} ->
-          {@fixture, 0}
+          {@combined_fixture, 0}
 
         {"mix", _} ->
           {"synthetic fixture failure", 1}

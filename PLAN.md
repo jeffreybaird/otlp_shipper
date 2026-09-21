@@ -4,7 +4,7 @@ A package build plan. The five-role workflow in AGENTS.md and
 [docs/codex-agents.md](docs/codex-agents.md) governs agent coordination. Read it end to end before starting; the
 packaging decision in §2 and the dependency decision in §4 shape everything after.
 
-## Current scope and status — September 16, 2026
+## Current scope and status — September 20, 2026
 
 `otlp_shipper` is one Hex package, under the `OtlpShipper` module root, providing
 Elixir-native collection and a shared OTLP/HTTP protobuf export layer. Logs and
@@ -13,8 +13,8 @@ metrics shipped in 0.1.0; 0.1.1 widened Finch compatibility. Phases 0–3 are co
 [release record](docs/submission/release-0.1.1.md) describe implemented behavior.
 
 The owner has expanded the planned scope to **SDK-compatible trace export**.
-Phases 4–5 have merged, Phase 6 implements the SDK adapter on its phase branch,
-and Phase 7 remains planned. The public 0.1.1 release still provides logs/metrics
+Phases 4–6 have merged. Phase 7 implements replacement proof, migration, and
+preparation of an unpublished 0.2.0 candidate on its phase branch. The public 0.1.1 release still provides logs/metrics
 only. Development does not publish a release or authorize replacing the tracing SDK.
 
 Confirmed decisions:
@@ -282,8 +282,8 @@ alternative.
 | 3 | Conformance, docs, release | Complete; 0.1.1 published |
 | 4 | SDK compatibility probe and approved trace contracts | Complete; [decision record](docs/decisions/trace-compatibility.md), PR #16 merged |
 | 5 | Trace schemas, configuration, encoding, and HTTP conformance | Complete; PR #17 merged |
-| 6 | SDK exporter, bounded lifecycle, correlation | In progress |
-| 7 | Replacement consumer, real Collector, migration/release preparation | After Phase 6 merges |
+| 6 | SDK exporter, bounded lifecycle, correlation | Complete; PR #18 merged |
+| 7 | Replacement consumer, real Collector, migration/release preparation | Local implementation/verification complete; PR pending; [work record](docs/workflows/phase-7-trace-release.md) |
 
 Each phase is a focused branch and PR. Do not start its successor until it merges.
 Use the five-role harness for implementation: Gherkin/failing tests, independent red,

@@ -70,6 +70,9 @@ jobs:
       - name: Verify optional trace SDK compilation in fresh releases
         run: sh scripts/trace_consumer_smoke.sh
 
+      - name: Verify all signals with existing Finch instrumentation
+        run: sh scripts/replacement_consumer_smoke.sh
+
   minimum:
     runs-on: ubuntu-latest
     steps:
@@ -94,3 +97,6 @@ jobs:
 
       - name: Verify optional trace SDK compilation in fresh releases
         run: sh scripts/trace_consumer_smoke.sh
+
+      - name: Verify instrumented replacement with minimum dependencies
+        run: OTLP_SMOKE_DEPENDENCY_SET=minimum sh scripts/replacement_consumer_smoke.sh

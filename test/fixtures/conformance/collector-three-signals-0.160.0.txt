@@ -1,0 +1,155 @@
+2026-09-20T23:57:05.976Z	info	otelconftelemetry/tracer.go:47	Internal trace telemetry disabled	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}}
+2026-09-20T23:57:05.978Z	info	service@v0.160.0/service.go:261	Starting otelcol...	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}, "Version": "0.160.0", "NumCPU": 8}
+2026-09-20T23:57:05.978Z	info	extensions/extensions.go:44	Starting extensions...	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}}
+2026-09-20T23:57:05.978Z	info	otlpreceiver@v0.160.0/otlp.go:175	Starting HTTP server	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}, "otelcol.component.id": "otlp", "otelcol.component.kind": "receiver", "endpoint": "[::]:4318"}
+2026-09-20T23:57:05.978Z	info	service@v0.160.0/service.go:284	Everything is ready. Begin running and processing data.	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}}
+2026-09-20T23:57:06.731Z	info	Logs	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "logs", "resource logs": 1, "log records": 2}
+2026-09-20T23:57:06.731Z	info	Traces	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 3}
+2026-09-20T23:57:06.732Z	info	ResourceSpans #0
+Resource SchemaURL: https://otlp-shipper.dev/conformance/resource
+Resource attributes:
+     -> service.name: Str(otlp-shipper-conformance)
+ScopeSpans #0
+ScopeSpans SchemaURL: https://otlp-shipper.dev/conformance/scope
+InstrumentationScope conformance.sdk 1.0
+Span #0
+    Trace ID       : 00000000000000000000000000000043
+    Parent ID      : 0000000000000042
+    ID             : 8a538fcada0fc098
+    Name           : otlp-shipper-conformance-remote
+    Kind           : Server
+    Start time     : 2026-09-20 23:57:06.703090166 +0000 UTC
+    End time       : 2026-09-20 23:57:06.703094333 +0000 UTC
+    Status code    : Unset
+    Status message : 
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Span #1
+    Trace ID       : 8cc133069e56a0b89b315ed3f5d59642
+    Parent ID      : 
+    ID             : f6355c40bd22f642
+    Name           : otlp-shipper-conformance-root
+    Kind           : Internal
+    Start time     : 2026-09-20 23:57:06.696352166 +0000 UTC
+    End time       : 2026-09-20 23:57:06.703088 +0000 UTC
+    Status code    : Unset
+    Status message : 
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Span #2
+    Trace ID       : 8cc133069e56a0b89b315ed3f5d59642
+    Parent ID      : f6355c40bd22f642
+    ID             : 41ee31ffe4bc63c3
+    Name           : otlp-shipper-conformance-child
+    Kind           : Client
+    Start time     : 2026-09-20 23:57:06.6998025 +0000 UTC
+    End time       : 2026-09-20 23:57:06.703084333 +0000 UTC
+    Status code    : Error
+    Status message : synthetic failure
+    DroppedAttributesCount: 0
+    DroppedEventsCount: 0
+    DroppedLinksCount: 0
+Attributes:
+     -> conformance.span: Bool(true)
+Events:
+SpanEvent #0
+     -> Name: conformance-event
+     -> Timestamp: 2026-09-20 23:57:06.699811291 +0000 UTC
+     -> DroppedAttributesCount: 0
+     -> Attributes::
+          -> conformance: Bool(true)
+	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "traces"}
+2026-09-20T23:57:06.731Z	info	ResourceLog #0
+Resource SchemaURL: 
+Resource attributes:
+     -> service.name: Str(otlp-shipper-conformance)
+ScopeLogs #0
+ScopeLogs SchemaURL: 
+InstrumentationScope otlp_shipper 0.1.0
+LogRecord #0
+ObservedTimestamp: 2026-09-20 23:57:06.696285 +0000 UTC
+Timestamp: 2026-09-20 23:57:06.696275 +0000 UTC
+SeverityText: info
+SeverityNumber: Info(9)
+Body: Str(Exporter 'Elixir.OtlpShipper.TraceExporter' successfully initialized)
+Trace ID: 
+Span ID: 
+Flags: 0
+LogRecord #1
+ObservedTimestamp: 2026-09-20 23:57:06.699823 +0000 UTC
+Timestamp: 2026-09-20 23:57:06.699813 +0000 UTC
+SeverityText: notice
+SeverityNumber: Info2(10)
+Body: Str(otlp-shipper-conformance-log)
+Attributes:
+     -> conformance: Bool(true)
+Trace ID: 8cc133069e56a0b89b315ed3f5d59642
+Span ID: 41ee31ffe4bc63c3
+Flags: 1
+	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "logs"}
+2026-09-20T23:57:06.731Z	info	Metrics	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "metrics", "resource metrics": 1, "metrics": 4, "data points": 4}
+2026-09-20T23:57:06.732Z	info	ResourceMetrics #0
+Resource SchemaURL: 
+Resource attributes:
+     -> service.name: Str(otlp-shipper-conformance)
+ScopeMetrics #0
+ScopeMetrics SchemaURL: 
+InstrumentationScope otlp_shipper 0.1.0
+Metric #0
+Descriptor:
+     -> Name: conformance.events.count
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Sum
+     -> IsMonotonic: true
+     -> AggregationTemporality: Delta
+NumberDataPoints #0
+Data point attributes:
+     -> region: Str(test)
+StartTimestamp: 2026-09-20 23:57:06.695698 +0000 UTC
+Timestamp: 2026-09-20 23:57:06.705304 +0000 UTC
+Value: 3
+Metric #1
+Descriptor:
+     -> Name: conformance.events.current
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Gauge
+NumberDataPoints #0
+StartTimestamp: 1970-01-01 00:00:00 +0000 UTC
+Timestamp: 2026-09-20 23:57:06.70428 +0000 UTC
+Value: 12
+Metric #2
+Descriptor:
+     -> Name: conformance.events.histogram
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Histogram
+     -> AggregationTemporality: Delta
+HistogramDataPoints #0
+StartTimestamp: 2026-09-20 23:57:06.695698 +0000 UTC
+Timestamp: 2026-09-20 23:57:06.705304 +0000 UTC
+Count: 3
+Sum: 21.000000
+Min: 2.000000
+Max: 12.000000
+ExplicitBounds #0: 5.000000
+ExplicitBounds #1: 10.000000
+Buckets #0, Count: 1
+Buckets #1, Count: 1
+Buckets #2, Count: 1
+Metric #3
+Descriptor:
+     -> Name: conformance.events.total
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Sum
+     -> IsMonotonic: true
+     -> AggregationTemporality: Delta
+NumberDataPoints #0
+StartTimestamp: 2026-09-20 23:57:06.695698 +0000 UTC
+Timestamp: 2026-09-20 23:57:06.705304 +0000 UTC
+Value: 21
+	{"resource": {"service.instance.id": "ea5c2379-b267-4183-9f35-03c307fd4796", "service.name": "otelcol", "service.version": "0.160.0"}, "otelcol.component.id": "debug", "otelcol.component.kind": "exporter", "otelcol.signal": "metrics"}

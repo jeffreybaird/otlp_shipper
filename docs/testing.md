@@ -246,3 +246,26 @@ absent. The optional API checks retain their existing mode-specific expectations
 This proves protocol packaging, not the SDK adapter or instrumentation migration;
 those remain Phases 6–7. Current run results are recorded in the
 [Phase 5 work record](workflows/phase-5-trace-protocol.md).
+
+
+## Phase 7 replacement verification
+
+The strict suite now includes `trace-replacement.feature`. It validates scoped
+Collector output and report structure; synthetic report validation does not prove
+execution. Actual release checks run separately:
+
+```sh
+sh scripts/trace_consumer_smoke.sh
+sh scripts/replacement_consumer_smoke.sh
+OTLP_SMOKE_DEPENDENCY_SET=minimum sh scripts/replacement_consumer_smoke.sh
+mix otlp_shipper.conformance
+```
+
+The replacement fixture uses real SDK/API and Finch instrumentation with the
+canonical exporter and runtime gpb absent. CI runs current/minimum shared-dependency
+modes. The real Collector remains opt-in and uses synthetic data on local Docker.
+Its task now requires logs, metrics, traces, and exact correlation/parentage; SDK
+absence returns `{:error, :tracing_sdk_unavailable}` before invoking Docker.
+Use `OTLP_REPLACEMENT_REPORT=/absolute/path/report.json` to retain successful actual
+release evidence. Reports include runtime application versions and descriptive
+elapsed/memory observations; they are not a comparative benchmark.

@@ -288,3 +288,29 @@ without implying SDK requeue. Invalid-init diagnostics have a 100 ms internal
 budget, so a blocked subscriber cannot hang provider startup. Real Collector trace
 conformance and the complete replacement/migration proof remain Phase 7. Hex 0.1.1
 still ships logs and metrics only; no new release has been published.
+
+
+## Phase 7 release preparation — unpublished 0.2.0 candidate
+
+The source includes the SDK exporter, migration guide, three-signal packaged
+consumer, and pinned real Collector trace/correlation verification. The supported
+SDK/API pair remains 1.7.0/1.5.0 in both shared-dependency modes. Representative
+Finch instrumentation is a separate fixture dependency, not a new library runtime
+dependency. The canonical exporter and runtime gpb are absent from that proof.
+
+Consumers own the global SDK as an included application and start its Finch pool
+first. The optional SDK dependency has `runtime: false`, preserving compilation
+ordering without imposing application startup. The consumer makes startup ownership
+explicit; its own direct SDK dependency must match the chosen ordinary/included
+application arrangement. The SDK creates global application tracers normally.
+The library never installs sampling or configuration globally. See the migration
+guide for startup, resource consistency, and the verified SDK-specific boundary.
+
+The candidate version is 0.2.0. It is not a public release; 0.1.1 remains the
+published logs/metrics package. Release authorization, final merged revision,
+publication and public-install verification are separate from development.
+See the [Phase 7 work record](workflows/phase-7-trace-release.md) for current evidence.
+Elapsed time, VM snapshots and dependency inventory are descriptive observations;
+no comparative throughput, allocation, retained-memory, or package-size advantage
+is claimed. API/SDK replacement, gRPC, durable storage, and global auto-configuration
+remain outside scope.

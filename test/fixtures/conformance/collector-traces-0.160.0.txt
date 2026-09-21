@@ -1,0 +1,68 @@
+# SYNTHETIC parser fixture, not real Collector conformance evidence.
+# Replace with captured pinned Collector output before claiming interoperability.
+2026-09-20T12:00:00.000Z	info	ResourceSpans #0
+Resource SchemaURL: https://otlp-shipper.dev/conformance/resource
+Resource attributes:
+     -> service.name: Str(otlp-shipper-conformance)
+ScopeSpans #0
+ScopeSpans SchemaURL: https://otlp-shipper.dev/conformance/scope
+InstrumentationScope conformance.sdk 1.0
+Span #0
+    Trace ID       : 11111111111111111111111111111111
+    Parent ID      : 
+    ID             : 1111111111111111
+    Name           : otlp-shipper-conformance-root
+    Kind           : Internal
+    Start time     : 2026-09-20 12:00:00 +0000 UTC
+    End time       : 2026-09-20 12:00:00.003 +0000 UTC
+    Status code    : Unset
+    Status message : 
+Span #1
+    Trace ID       : 11111111111111111111111111111111
+    Parent ID      : 1111111111111111
+    ID             : 2222222222222222
+    Name           : otlp-shipper-conformance-child
+    Kind           : Client
+    Start time     : 2026-09-20 12:00:00.001 +0000 UTC
+    End time       : 2026-09-20 12:00:00.002 +0000 UTC
+    Status code    : Error
+    Status message : synthetic failure
+Attributes:
+     -> conformance.span: Bool(true)
+Events:
+SpanEvent #0
+     -> Name: conformance-event
+     -> Timestamp: 2026-09-20 12:00:00.0015 +0000 UTC
+     -> DroppedAttributesCount: 0
+     -> Attributes::
+          -> conformance: Bool(true)
+Span #2
+    Trace ID       : 00000000000000000000000000000043
+    Parent ID      : 0000000000000042
+    ID             : 3333333333333333
+    Name           : otlp-shipper-conformance-remote
+    Kind           : Server
+    Start time     : 2026-09-20 12:00:00.004 +0000 UTC
+    End time       : 2026-09-20 12:00:00.005 +0000 UTC
+    Status code    : Unset
+    Status message : 
+	{"otelcol.signal": "traces"}
+2026-09-20T12:00:00.006Z	info	ResourceLog #0
+Resource SchemaURL: 
+Resource attributes:
+     -> service.name: Str(otlp-shipper-conformance)
+ScopeLogs #0
+ScopeLogs SchemaURL: 
+InstrumentationScope otlp_shipper 0.1.0
+LogRecord #0
+ObservedTimestamp: 2026-09-20 12:00:00.0018 +0000 UTC
+Timestamp: 2026-09-20 12:00:00.0017 +0000 UTC
+SeverityText: notice
+SeverityNumber: Info2(10)
+Body: Str(otlp-shipper-conformance-log)
+Attributes:
+     -> conformance: Bool(true)
+Trace ID: 11111111111111111111111111111111
+Span ID: 2222222222222222
+Flags: 1
+	{"otelcol.signal": "logs"}

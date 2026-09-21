@@ -40,6 +40,13 @@ true = Code.ensure_loaded?(OtlpShipper.TraceSampler) == expected
 :non_existing = :code.which(:opentelemetry_exporter)
 :non_existing = :code.which(:gpb_compile)
 
+unless expected do
+  {:error, :tracing_sdk_unavailable} =
+    OtlpShipper.Conformance.run(fn _, _, _ ->
+      raise "SDK-absent conformance must not invoke Docker or another command"
+    end)
+end
+
 # Read one request through an actual release socket without development dependencies.
 defmodule TraceReleaseCollector do
   def receive_trace(listener) do

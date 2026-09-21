@@ -1,0 +1,24 @@
+{
+  "mode": "default",
+  "sdk_version": "1.7.0",
+  "api_version": "1.5.0",
+  "finch_version": "0.20.0",
+  "instrumentation_name": "opentelemetry_finch",
+  "instrumentation_version": "0.2.0",
+  "signals": {"logs": 2, "metrics": 1, "traces": 2},
+  "correlated_logs": true,
+  "exporter_feedback_spans": 0,
+  "canonical_exporter_present": false,
+  "runtime_gpb_present": false,
+  "runtime_applications": [
+    {"name": "otlp_shipper", "version": "0.2.0"},
+    {"name": "opentelemetry", "version": "1.7.0"},
+    {"name": "opentelemetry_api", "version": "1.5.0"},
+    {"name": "finch", "version": "0.20.0"},
+    {"name": "opentelemetry_finch", "version": "0.2.0"}
+  ],
+  "runtime_application_count": 5,
+  "elapsed_ms": 100,
+  "memory_before_bytes": 1000000,
+  "memory_after_bytes": 1001000
+}
