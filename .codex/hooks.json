@@ -3,15 +3,14 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^(Bash|apply_patch)$",
         "hooks": [
           {
-            "type": "command",
-            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/run_guard.py\"",
-            "timeout": 10,
-            "statusMessage": "Reviewing test contracts and analysis bypasses"
+            "command": "python3 -B /Users/jeffreybaird/src/otlp_shipper/.codex/hooks/workflow_guard.py --platform codex --root /Users/jeffreybaird/src/otlp_shipper --policy /Users/jeffreybaird/src/otlp_shipper/.codex/hooks/policy.json",
+            "timeout": 5,
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": ".*"
       }
     ]
   }

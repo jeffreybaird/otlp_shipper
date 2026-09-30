@@ -1,0 +1,29 @@
+{
+  "sha256": {
+    ".claude/agents/workflow-implementer.md": "f3c095220f2739baff2b753c780be8425564c34fd64668a3735ca9f8a85d3eea",
+    ".claude/agents/workflow-orchestrator.md": "3a42c158009bcf941da1f98c034f0e8de71e81d40b81307ccdb7b2766c373e02",
+    ".claude/agents/workflow-reviewer.md": "31f2820b89952f5bcc4fa95c10e176d8799ccee0b388c3b9091fa28a5409d655",
+    ".claude/agents/workflow-runner.md": "4222db9445213a2904f98bfbc05adda1cd62ae8a1b32c0857cee6d948a8eac8f",
+    ".claude/agents/workflow-spec-writer.md": "18fc29290a20f7226c7802e71a4a2ae1d50baae4569a4562d91cb26556e14e69",
+    ".claude/hooks/policy.json": "8ce212f3cb56bb71e00b7a8f5f01b46197a417a35f2b49e7c7f3a944ffaa828d",
+    ".claude/hooks/workflow_audit.py": "9bff980ee0d1b8fb7d78010edd7135286ce602bfa2f7e3c344fc064709b82a9b",
+    ".claude/hooks/workflow_guard.py": "65994a7959d9cfd06a7ba5114706fcae8316914cd8b1e950aafd529b1a747807",
+    ".claude/settings.json": "613532c60084045b73bd03229a2cba10eb7bf28988029c4f26e0f76d07ac8cd5",
+    ".codex/agents/workflow_implementer.toml": "c1408070071b35e6336c3a6e679e313066cc948ecb1bd17c3bfafebe9bc37081",
+    ".codex/agents/workflow_orchestrator.toml": "a54b1cd4555ef1c141b8bf7a6228a41b56c8e3ea42a7081e1fda6d8a568aa561",
+    ".codex/agents/workflow_reviewer.toml": "db019ae62379c473bb03a44943da0a22fcaceb3647628f8a359112a6d45c4576",
+    ".codex/agents/workflow_runner.toml": "33dc52779943238a061732b82a33ef95fcd0d96c7e7a6935768b4a4d19a244b0",
+    ".codex/agents/workflow_spec_writer.toml": "7a50fb0268225412edc602479d5fe64fe3cfb3aa156c991cf13030be62917b65",
+    ".codex/config.toml": "aa84e1848f9d1e4cf46be91f032e09f8075a4779872285d08bcbd291b2e0187a",
+    ".codex/hooks.json": "4b8563fcc9b32764b7b39bbc663111e7410b54058de00bbea4acb31aadca1f67",
+    ".codex/hooks/policy.json": "8ce212f3cb56bb71e00b7a8f5f01b46197a417a35f2b49e7c7f3a944ffaa828d",
+    ".codex/hooks/workflow_guard.py": "65994a7959d9cfd06a7ba5114706fcae8316914cd8b1e950aafd529b1a747807",
+    ".docs/agent-workflow.md": "2b0364e8838d8af7eef9b1e634fb52702347c45b0f128ddc63c368cae0989e3f",
+    ".gitattributes": "2292927f73ce12c647a5f03fc0fc1b5847709bc1dfd5ec1493bbde4dddd6f326",
+    "AGENTS.md": "f4df699f16359f1ccf42f5c97465ead7e6fe2d4e976a797c5fef31e8b7742b9f",
+    "CLAUDE.md": "a607e0cdb5a05789b1b821d5d86df0dc3ee374c09f4a4d4822fa192e371886db",
+    "docs/agent-guardrails.md": "3d5e900435824682b6d8e5acbe3f10c3a22179650c8cbd9a67313cfcb820684f",
+    "docs/codex-agents.md": "64db64ee3941833a2d59a36cc77b2c4673381cf4e38838adb0c710e69d2b6fe5"
+  },
+  "version": "2.0.0"
+}
