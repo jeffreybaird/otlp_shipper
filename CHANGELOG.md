@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.1 — release candidate
+## 0.2.1 — 2026-09-30
 
 - Derive the logs and metrics instrumentation scope version from the installed
   `otlp_shipper` OTP application metadata instead of hardcoding `0.1.0`.
