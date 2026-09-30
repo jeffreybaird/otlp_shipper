@@ -1,0 +1,35 @@
+{
+  "legacy_commands": [
+    "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/run_guard.py\""
+  ],
+  "schema_version": 2,
+  "source_globs": [
+    "lib/*.ex",
+    "lib/*.exs",
+    "config/*.exs",
+    "mix/*.exs",
+    "mix/*.ex",
+    "mix.exs",
+    "mix.lock",
+    ".formatter.exs",
+    ".credo.exs",
+    "scripts/*.sh",
+    "scripts/*.py",
+    "priv/proto/*.proto",
+    "priv/conformance/*.exs",
+    "priv/conformance/*.yaml",
+    ".github/workflows/*.yml",
+    ".github/workflows/*.yaml"
+  ],
+  "test_globs": [
+    "test/**",
+    "features/**",
+    "scripts/test_agent_guard*.py",
+    "scripts/fixtures/trace_replacement/**",
+    "**/*_test.py",
+    "**/*.test.js",
+    "**/*.test.ts",
+    "**/*.spec.js",
+    "**/*.spec.ts"
+  ]
+}
