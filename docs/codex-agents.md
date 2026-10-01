@@ -1,3 +1,8 @@
+> Historical setup reference. For current roles, workflow, and enforcement,
+> follow [shared project guidance](../.docs/project-guidance.md) and
+> [the agent workflow](../.docs/agent-workflow.md). The legacy setup below
+> is not the active workflow or a description of current hook behavior.
+
 # Five-role feature harness
 
 The primary agent acts as orchestrator. Use the definitions in
