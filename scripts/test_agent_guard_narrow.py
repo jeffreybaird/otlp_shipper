@@ -168,15 +168,38 @@ class NarrowGuardTests(unittest.TestCase):
                     self.denied(json.loads(completed.stdout))
 
     def test_ng09_matcher_is_narrow_and_anchored(self):
+        # The shared v2 workflow separates edit ownership from shell auditing.
         config = json.loads((ROOT / ".codex/hooks.json").read_text())
+        dynamic_root = "$(git rev-parse --show-toplevel)"
+
+        def command(script):
+            return ('python3 -B "' + dynamic_root + '/.codex/hooks/' + script +
+                    '" --platform codex --root "' + dynamic_root +
+                    '" --policy "' + dynamic_root + '/.codex/hooks/policy.json"')
+
         entries = config["hooks"]["PreToolUse"]
-        self.assertEqual(len(entries), 1)
-        matcher = entries[0]["matcher"]
-        self.assertEqual(matcher, "^(Bash|apply_patch)$")
-        for name in ["Bash", "apply_patch"]:
-            self.assertIsNotNone(re.search(matcher, name))
-        for name in ["web.run", "spawn_agent", "BashExtra", "prefix_apply_patch"]:
-            self.assertIsNone(re.search(matcher, name))
+        self.assertEqual(len(entries), 2)
+        guard_entries = [entry for entry in entries if any(
+            hook["command"] == command("workflow_guard.py") for hook in entry["hooks"])]
+        self.assertEqual(len(guard_entries), 1)
+        self.assertEqual(guard_entries[0], {"matcher": ".*", "hooks": [{
+            "type": "command", "command": command("workflow_guard.py"), "timeout": 5}]})
+
+        for event in ["PreToolUse", "PostToolUse"]:
+            with self.subTest(event=event):
+                audit_entries = [entry for entry in config["hooks"][event] if any(
+                    hook["command"] == command("workflow_audit.py") for hook in entry["hooks"])]
+                self.assertEqual(len(audit_entries), 1)
+                [audit_entry] = audit_entries
+                self.assertEqual(audit_entry, {"matcher": "^(Bash|apply_patch)$", "hooks": [{
+                    "type": "command", "command": command("workflow_audit.py"), "timeout": 10}]})
+                matcher = audit_entry["matcher"]
+                for name in ["Bash", "apply_patch"]:
+                    self.assertIsNotNone(re.search(matcher, name))
+                for name in ["web.run", "spawn_agent", "BashExtra", "prefix_apply_patch",
+                             "prefix_Bash", "apply_patchExtra"]:
+                    self.assertIsNone(re.search(matcher, name))
+        self.assertEqual(len(config["hooks"]["PostToolUse"]), 1)
 
 
 if __name__ == "__main__":

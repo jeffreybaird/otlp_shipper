@@ -17,7 +17,7 @@
       {
         "hooks": [
           {
-            "command": "python3 -B /Users/jeffreybaird/src/otlp_shipper/.codex/hooks/workflow_guard.py --platform codex --root /Users/jeffreybaird/src/otlp_shipper --policy /Users/jeffreybaird/src/otlp_shipper/.codex/hooks/policy.json",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/.codex/hooks/workflow_guard.py\" --platform codex --root \"$(git rev-parse --show-toplevel)\" --policy \"$(git rev-parse --show-toplevel)/.codex/hooks/policy.json\"",
             "timeout": 5,
             "type": "command"
           }
