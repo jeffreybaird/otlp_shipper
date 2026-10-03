@@ -2,10 +2,11 @@
 
 These documents adapt Page Monitor's repository workflow for an Elixir Hex library
 and carry over the applicable style from Marquee's `CLAUDE.md` and `.claude/` files.
-The source repositories remain unchanged. [../PLAN.md](../PLAN.md) supplies the package design. Implementation through Phase 3 is recorded in product decisions;
+The source repositories remain unchanged. [../PLAN.md](../PLAN.md) supplies the package design. Implementation through Phase 7 is recorded in product decisions;
 publication still requires separate authorization.
 
-version 0.1.1 was published to public Hex on September 13, 2026.
+Version 0.2.1 is the latest public Hex release, published September 30, 2026; the
+source prepares the 0.2.2 security patch. See [release readiness](submission/readiness.md).
 
 | Document | Use |
 | --- | --- |
@@ -17,6 +18,7 @@ version 0.1.1 was published to public Hex on September 13, 2026.
 | [Agent coordination](codex-agents.md) | Five-role specification, red/green, and review loop |
 | [Agent guardrails](agent-guardrails.md) | Hook activation, human approval, and enforcement limits |
 | [Data handling](data-handling.md) | Configuration, credentials, diagnostics |
+| [0.2.2 candidate](submission/candidate-0.2.2.md) | Current security patch evidence |
 | [0.1.1 release](submission/release-0.1.1.md) | Published artifact and consumer verification |
 | [Release readiness](submission/readiness.md) | Prerequisites and evidence |
 | [Build](submission/build.md) | Local Hex package inspection and publication |

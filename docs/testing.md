@@ -211,7 +211,7 @@ OTLP_SMOKE_DEPENDENCY_SET=minimum_with_tracing scripts/package_smoke.sh
 
 All modes test real loopback log/metric delivery from a release without runtime gpb.
 The default/minimum modes also require tracing API absence; the last mode requires
-API 1.3.0 presence. Lower bounds are Finch 0.20.0, telemetry 1.3.0,
+API 1.3.0 presence. Lower bounds are Finch 0.20.0, Mint 1.10.2, HPAX 1.0.4, telemetry 1.3.0,
 telemetry_metrics 1.1.0, and gpb 4.21.7. A failed consumer build demonstrated that
 gpb 4.21.0 cannot compile on OTP 29 (`syntax error before: 'else'`), motivating the
 corrected requirement. API 1.3.0 emits an upstream `link/2` warning on OTP 29 but the

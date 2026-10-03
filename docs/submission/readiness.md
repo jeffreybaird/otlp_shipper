@@ -1,13 +1,14 @@
 # Hex release readiness
 
-**0.2.0 is published**, verified through the public Hex API on September 21, 2026.
-The registry lists its publication at 15:44:25 UTC and versioned documentation.
-See [Hex release metadata](https://hex.pm/api/packages/otlp_shipper/releases/0.2.0).
-Earlier [0.2.0 candidate evidence](candidate-0.2.0.md) describes pre-publication checks.
+**0.2.1 is published**, verified through the public Hex API on October 3, 2026.
+The registry lists its publication on September 30, 2026 at 11:05:10 UTC.
+See [Hex release metadata](https://hex.pm/api/packages/otlp_shipper/releases/0.2.1).
+Earlier [0.2.1](candidate-0.2.1.md) and [0.2.0](candidate-0.2.0.md) candidate
+evidence describes pre-publication checks.
 
-The current source prepares **0.2.1**, a patch correcting the instrumentation scope
-version for logs and metrics. See [candidate evidence](candidate-0.2.1.md).
-Preparation does not upload a package or documentation.
+The current source prepares **0.2.2**, a security patch declaring direct Mint
+1.10.2 and HPAX 1.0.4 floors. See [candidate evidence](candidate-0.2.2.md). Preparation does not
+upload a package or documentation.
 
 The source repository remains private. Public consumers can fetch the Hex source
 archive and read HexDocs; GitHub source/support links require repository access.

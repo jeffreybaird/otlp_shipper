@@ -2,7 +2,8 @@
 
 [../PLAN.md](../PLAN.md) is the intended design, not evidence of implemented features.
 The user has authorized development, atomic commits, and a push after each commit.
-Version 0.1.1 is the current public release; dated scaffold and phase sections preserve earlier
+Version 0.2.1 is the current public release and the source prepares the 0.2.2
+security patch ([readiness](submission/readiness.md)); dated scaffold and phase sections preserve earlier
 observations, with current release verification linked at the end.
 
 ## Planned scope
@@ -314,3 +315,18 @@ Elapsed time, VM snapshots and dependency inventory are descriptive observations
 no comparative throughput, allocation, retained-memory, or package-size advantage
 is claimed. API/SDK replacement, gRPC, durable storage, and global auto-configuration
 remain outside scope.
+
+## Mint and HPAX security floors — 0.2.2 candidate (October 3, 2026)
+
+Mint 1.10.1 and earlier are affected by EEF-CVE-2026-91043, EEF-CVE-2026-92103 and
+EEF-CVE-2026-94194; 1.10.2 fixes all three. Finch, including 0.24.0, still accepts
+Mint `~> 1.8`, and a library lockfile does not constrain consumers. The package
+therefore declares a direct `{:mint, "~> 1.10 and >= 1.10.2"}` requirement. Mint was
+already a runtime dependency through Finch; the package does not call Mint directly
+and no API or runtime behavior changes. Mint 1.10.2 still accepts HPAX
+versions affected by EEF-CVE-2026-58226 (fixed in 1.0.4), so the package also
+declares `{:hpax, "~> 1.0 and >= 1.0.4"}`. The package's own Finch pools are
+HTTP/1, so the HTTP/2 advisories mainly reach consumers sharing these libraries.
+DEPS-01 to DEPS-06 in `docs/features/dependency-requirements.feature` define the
+contract. Remove each direct requirement once upstream floors exclude the affected
+versions.

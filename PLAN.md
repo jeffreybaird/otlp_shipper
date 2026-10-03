@@ -13,9 +13,8 @@ metrics shipped in 0.1.0; 0.1.1 widened Finch compatibility. Phases 0–3 are co
 [release record](docs/submission/release-0.1.1.md) describe implemented behavior.
 
 The owner has expanded the planned scope to **SDK-compatible trace export**.
-Phases 4–6 have merged. Phase 7 implements replacement proof, migration, and
-preparation of an unpublished 0.2.0 candidate on its phase branch. The public 0.1.1 release still provides logs/metrics
-only. Development does not publish a release or authorize replacing the tracing SDK.
+Phases 4–7 are complete; trace export shipped in 0.2.0, and 0.2.1 is the latest
+public release. The source prepares the 0.2.2 security patch. Development does not publish a release or authorize replacing the tracing SDK.
 
 Confirmed decisions:
 

@@ -2,7 +2,7 @@
 
 This guide summarizes [../PLAN.md](../PLAN.md). The shared core, Logger adapter,
 and metrics reporter are implemented, including Phase 3 conformance/release work.
-The unreleased trace protocol core and Phase 6 SDK integration are implemented. Tracing is not part of the current 0.1.1 release.
+The trace protocol core and SDK integration shipped in 0.2.0; 0.2.1 is the current public release.
 Confirmed: `otlp_shipper`, module root `OtlpShipper`, public Hex, Finch directly.
 
 ## One package, independent signals
@@ -42,7 +42,8 @@ input and build step needed when Hex compiles the package outside this checkout.
 Keep `telemetry_metrics` and `telemetry` required, and `opentelemetry_api` optional
 with guarded use. Do not load the full SDK or gRPC stack by default. Do not depend
 on the canonical exporter or reuse its generated codecs. Finch is the
-selected HTTP client. Keep its supervised pools isolated from host configuration.
+selected HTTP client. The direct Mint (`>= 1.10.2`) and HPAX (`>= 1.0.4`)
+requirements are only security floors; the package does not call either directly. Keep its supervised pools isolated from host configuration.
 
 ## Resource limits and errors
 

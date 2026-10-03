@@ -35,16 +35,14 @@ distinguishes those plans from implemented behavior; examples in these instructi
 
 This is an Elixir library distributed as a Hex package. Use Mix, ExUnit, doctests,
 and the repository's formatter. `mix.exs` declares `:otlp_shipper`, version
-`0.1.1`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
-The planned product ships logs, metrics, and traces over OTLP/HTTP. Logs and metrics
-are implemented; SDK-compatible trace export is planned in PLAN.md Phases 4–7.
-Retain the OTel API, tracing SDK, and existing instrumentation; replacing them is
-outside the tracing expansion. Do not describe planned trace support as shipped.
-The shared core, supervised Logger handling, and metrics reporter are implemented
-through Phase 3, including opt-in real Collector conformance and local release
-preparation. Version 0.1.1 was published to public Hex on September 13, 2026.
-See [release evidence](../docs/submission/release-0.1.1.md). Future publication
-remains separately authorized.
+`0.2.2`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
+The product ships logs, metrics, and SDK-compatible traces over OTLP/HTTP. PLAN.md
+Phases 0–7 are complete; trace export shipped in 0.2.0. Retain the OTel API, tracing
+SDK, and existing instrumentation; the package replaces only the exporter role.
+Version 0.2.1 is the latest public Hex release, published September 30, 2026.
+The source tree prepares 0.2.2, a security patch that declares direct `mint`
+(1.10.2) and `hpax` (1.0.4) floors; see [readiness](../docs/submission/readiness.md). Future
+publication remains separately authorized.
 Development is authorized. Use Finch directly for HTTP and publish atomic commits
 to the phase branch after checks pass. Public Hex publication requires release authorization.
 
