@@ -32,6 +32,8 @@ defmodule ReplacementConsumer.MixProject do
       "minimum" ->
         [
           {:finch, "== 0.20.0"},
+          {:mint, "== 1.10.2"},
+          {:hpax, "== 1.0.4"},
           {:telemetry, "== 1.3.0"},
           {:telemetry_metrics, "== 1.1.0"},
           {:gpb, "== 4.21.7", runtime: false}

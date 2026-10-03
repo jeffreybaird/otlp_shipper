@@ -4,14 +4,17 @@ An Elixir package for bounded OTLP/HTTP logs, `Telemetry.Metrics`, and SDK-compa
 trace export. Finch provides HTTP connection pooling. Logs and metrics work without
 the OpenTelemetry SDK; tracing retains the canonical API, SDK, and instrumentation.
 
-**[0.2.0 is available on Hex](https://hex.pm/packages/otlp_shipper/0.2.0).**
-[API documentation](https://hexdocs.pm/otlp_shipper/0.2.0/) is public. The GitHub
+**[0.2.1 is available on Hex](https://hex.pm/packages/otlp_shipper/0.2.1).**
+[API documentation](https://hexdocs.pm/otlp_shipper/0.2.1/) is public. The GitHub
 source repository is currently private. See the
 [migration guide](docs/migration.md) for trace exporter replacement and rollback.
 
-**This source tree prepares 0.2.1; it has not been published.** The patch makes
-log and metric instrumentation scopes report the loaded `otlp_shipper` application
-version instead of `0.1.0`. Original trace scopes remain unchanged.
+**This source tree prepares 0.2.2; it has not been published.** The security patch
+declares direct `mint` (`~> 1.10 and >= 1.10.2`) and `hpax` (`~> 1.0 and >= 1.0.4`)
+requirements, so consumers can no longer resolve versions affected by
+EEF-CVE-2026-91043, EEF-CVE-2026-92103, EEF-CVE-2026-94194 (Mint), or
+EEF-CVE-2026-58226 (HPAX). Until 0.2.2 is published, run `mix deps.update mint hpax`
+to move an existing lockfile to patched versions. No runtime API changes.
 
 ## Metrics setup
 
@@ -53,13 +56,13 @@ Logger.info("checkout complete", order_id: "example-42")
 
 ## Installation and compatibility
 
-For the 0.2.1 release, add the package to your `mix.exs` dependencies:
+For the 0.2.2 release, add the package to your `mix.exs` dependencies:
 
 ```elixir
-{:otlp_shipper, "~> 0.2.1"}
+{:otlp_shipper, "~> 0.2.2"}
 ```
 
-The dependency becomes available when 0.2.1 is published. Then run `mix deps.get`. The snippets above show standalone trees; in an application,
+The dependency becomes available when 0.2.2 is published. Then run `mix deps.get`. The snippets above show standalone trees; in an application,
 add each child to your existing supervisor instead of starting an extra root.
 
 Elixir 1.19+ and OTP 28+ are the supported baseline. CI checks Elixir 1.19.0 / OTP
@@ -70,7 +73,7 @@ versions, but those are not pre-certified.
 Version 0.1.1 widens Finch from `~> 0.20.0` to `~> 0.20`, allowing versions
 `>= 0.20.0` and `< 1.0.0`, including 0.21.x. No runtime behavior changed.
 
-Dependency lower bounds are Finch 0.20.0, telemetry 1.3.0, telemetry_metrics 1.1.0,
+Dependency lower bounds are Finch 0.20.0, Mint 1.10.2, HPAX 1.0.4, telemetry 1.3.0, telemetry_metrics 1.1.0,
 gpb 4.21.7, and optional opentelemetry_api 1.3.0. Fresh production consumers exercise
 these bounds with and without tracing. gpb 4.21.0 cannot compile on OTP 29 and is
 excluded. Optional API 1.3.0 works in the no-active-span smoke but emits an upstream
@@ -385,8 +388,8 @@ at build time and is not a runtime application. Collector response decoding is
 included to detect partial rejection; production does not ingest encoded telemetry.
 
 Repository development and release guidance lives under `docs/`.
-Version 0.2.0 was published on September 21, 2026. Version 0.2.1 is an unpublished
-patch candidate. See `docs/submission/readiness.md` for release guidance. Building
+Version 0.2.1 was published on September 30, 2026. Version 0.2.2 is an unpublished
+security patch candidate. See `docs/submission/readiness.md` for release guidance. Building
 a package does not publish it; further uploads require release authorization.
 
 

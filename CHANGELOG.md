@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.2 — Unreleased
+
+- Declare a direct `mint` requirement of `~> 1.10 and >= 1.10.2`. Finch accepts
+  Mint `~> 1.8`, so consumers could previously resolve versions affected by
+  EEF-CVE-2026-91043 (HTTP/2 HPACK cookie headers bypass `max_header_list_size`),
+  EEF-CVE-2026-92103 (oversized HTTP/2 frames buffered before `max_frame_size`
+  enforcement), and EEF-CVE-2026-94194 (HTTP/1 chunked framing response smuggling).
+- Declare a direct `hpax` requirement of `~> 1.0 and >= 1.0.4`. Mint 1.10.2 still
+  accepts HPAX versions affected by EEF-CVE-2026-58226 (unbounded HPACK integer
+  decoding denial of service).
+- No public API or runtime behavior of the package changes. Existing consumers can
+  run `mix deps.update mint hpax` to pick up the patched versions.
+- Lock Mint 1.10.2 for development and exercise Mint 1.10.2 and HPAX 1.0.4 as the
+  minimums in consumer release checks.
+
 ## 0.2.1 — 2026-09-30
 
 - Derive the logs and metrics instrumentation scope version from the installed
