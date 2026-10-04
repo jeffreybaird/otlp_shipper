@@ -1,12 +1,26 @@
 # Data handling and observability
 
-The scaffold has no implemented shipping transport. This guide defines constraints
-for future behavior; it is not a published privacy policy or a claim about delivery.
+The package exports logs, metrics, and traces to consumer-configured OTLP/HTTP
+endpoints. Telemetry can include log bodies, metric tags, span attributes/events,
+resource identity, and trace/span IDs. The [README](../README.md) documents endpoint
+and header precedence, limits, and failure behavior; the [migration guide](migration.md)
+describes SDK resource and startup ownership.
 
-If network export is implemented, document the exact destination configuration,
-data categories, authentication, TLS behavior, redirects, storage/retention, and
-failure handling. The host application owns its deployment configuration and user
-consent requirements. Do not invent a developer-operated collection service.
+Credentials come from runtime options or OTEL environment variables. Endpoint
+userinfo and redirects are rejected. HTTPS uses Finch/Mint verification defaults;
+plain HTTP is supported, including the default localhost Collector endpoints.
+Custom certificate/mTLS environment settings are not implemented. Shipper's log
+and metric queues are bounded and in memory, with no durable disk spool. Trace
+buffering belongs to the SDK, whose queue cap can be exceeded by bursts.
+Crashes, overload, and
+exhausted retries can lose data; retrying can duplicate accepted data. Size limits
+and truncation are not secret redaction: consumers must filter sensitive telemetry
+before emission.
+
+The host application owns deployment configuration, destination retention/access
+controls, and consent requirements. This library operates no collection service.
+These are implementation constraints and documented behavior, not a standalone
+privacy policy.
 
 - Keep credentials in consumer-supplied runtime configuration; never embed them in
   source, docs, fixtures, package archives, or logs.
@@ -18,7 +32,7 @@ consent requirements. Do not invent a developer-operated collection service.
   payloads to disk unless the package's agreed delivery contract requires it.
 - Let the host configure logging and instrumentation. Avoid logging complete payloads
   or authentication headers. Use stable messages and structured metadata.
-- If shipping logs or telemetry, prevent the exporter's own failures and requests
+- Prevent the exporter's own failures and requests
   from recursively generating more exports. Test the relevant feedback path.
 
 Review disclosure text whenever behavior changes. Browser permission forms, payment

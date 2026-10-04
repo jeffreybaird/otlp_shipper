@@ -1,5 +1,9 @@
 # 0.2.1 release candidate
 
+Historical record: versions, visibility, and publication status below describe that
+release check. See [current release readiness](readiness.md) for present status.
+
+
 ## Scope
 
 Patch release for the dynamic logs/metrics instrumentation scope version.

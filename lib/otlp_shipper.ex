@@ -6,8 +6,10 @@ defmodule OtlpShipper do
   `OtlpShipper.Value`, `OtlpShipper.Encoder`, `OtlpShipper.Transport`, and
   `OtlpShipper.Buffer`. Add `OtlpShipper.LogHandler` to your supervision tree
   for Logger export with optional span correlation, or `OtlpShipper.MetricsReporter`
-  for bounded Telemetry.Metrics aggregation and delta export. Interfaces are
-  pre-release and may change before publication.
+  for bounded Telemetry.Metrics aggregation and delta export. Use
+  `OtlpShipper.TraceExporter` with your application's OpenTelemetry SDK and API
+  for trace export. See the [migration guide](migration.html) for exporter
+  replacement and rollback.
 
   Resolve configuration before starting a component:
 

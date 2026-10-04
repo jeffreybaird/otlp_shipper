@@ -1,6 +1,7 @@
 # 0.1.0 publication verification
 
-Historical release record. [0.1.1](release-0.1.1.md) is now the current release.
+Historical release record. Visibility and versions below describe the original
+check; see [current release readiness](readiness.md) for present status.
 
 Verified September 13, 2026 after the owner reported publication.
 

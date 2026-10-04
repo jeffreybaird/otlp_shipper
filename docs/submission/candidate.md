@@ -1,5 +1,9 @@
 # 0.1.0 candidate evidence
 
+Historical record: versions, visibility, and publication status below describe that
+release check. See [current release readiness](readiness.md) for present status.
+
+
 **Historical preparation record.** Version 0.1.0 was subsequently published on
 September 13, 2026 with this exact archive checksum. See
 [publication verification](release-0.1.0.md) for current status. The observations

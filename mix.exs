@@ -3,7 +3,7 @@ Code.require_file("mix/compile_otlp_protos.exs", __DIR__)
 defmodule OtlpShipper.MixProject do
   use Mix.Project
 
-  @version "0.2.1"
+  @version "0.2.2"
 
   def project do
     [
@@ -39,6 +39,7 @@ defmodule OtlpShipper.MixProject do
   defp deps do
     [
       {:finch, "~> 0.20"},
+      {:mint, "~> 1.10 and >= 1.10.2"},
       {:telemetry, "~> 1.3"},
       {:telemetry_metrics, "~> 1.1"},
       {:opentelemetry_api, "~> 1.3", optional: true},

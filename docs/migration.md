@@ -1,9 +1,10 @@
 # Migrating trace export to otlp_shipper 0.2.x
 
-Version 0.2.0 is available on Hex and includes SDK-compatible trace export. The
-examples below target the 0.2.1 patch release, which corrects log and metric
-instrumentation scope versions. The dependency becomes available when 0.2.1 is
-published. It preserves original trace scopes and requires no trace migration changes.
+SDK-compatible trace export is available since 0.2.0. The examples below target
+0.2.2. Since 0.2.1, log and metric instrumentation scopes report the loaded package
+version; original trace scopes remain unchanged. Upgrading from 0.2.1 to 0.2.2
+requires no trace configuration changes. It adds a Mint 1.10.2 security minimum;
+run `mix deps.update otlp_shipper mint` and review your consumer lockfile.
 
 ## What changes
 
@@ -28,7 +29,7 @@ application so OTP loads it without starting it before the Finch pool:
 # Consumer mix.exs
 defp deps do
   [
-    {:otlp_shipper, "~> 0.2.1"},
+    {:otlp_shipper, "~> 0.2.2"},
     {:opentelemetry, "== 1.7.0", runtime: false},
     {:opentelemetry_api, "== 1.5.0"},
     {:opentelemetry_finch, "== 0.2.0"}

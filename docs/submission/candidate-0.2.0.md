@@ -1,5 +1,9 @@
 # 0.2.0 candidate evidence
 
+Historical record: versions, visibility, and publication status below describe that
+release check. See [current release readiness](readiness.md) for present status.
+
+
 This is release preparation, not a public release. The published version remains
 0.1.1. No package/docs upload, tag, or GitHub release has been performed.
 

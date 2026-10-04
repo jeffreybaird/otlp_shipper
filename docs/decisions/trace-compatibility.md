@@ -1,5 +1,11 @@
 # Phase 4: SDK-compatible trace export
 
+Historical Phase 4 decision record. Phases 5–7 subsequently implemented these
+contracts and trace export shipped in 0.2.0. See the [migration guide](../migration.md)
+for current consumer instructions and [release readiness](../submission/readiness.md)
+for publication status. Future-tense statements below describe the original gates.
+
+
 Status: Phase 4 merged in PR #16 on September 17, 2026, with all CI checks passing. This record
 does not make trace export available in version 0.1.1. Implementation belongs to
 Phases 5–7. Phase 5 has since merged, and the unreleased Phase 6 implementation is

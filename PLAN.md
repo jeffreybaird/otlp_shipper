@@ -4,25 +4,27 @@ A package build plan. The five-role workflow in AGENTS.md and
 [docs/codex-agents.md](docs/codex-agents.md) governs agent coordination. Read it end to end before starting; the
 packaging decision in §2 and the dependency decision in §4 shape everything after.
 
-## Current scope and status — September 20, 2026
+## Current scope and status — October 4, 2026
 
 `otlp_shipper` is one Hex package, under the `OtlpShipper` module root, providing
 Elixir-native collection and a shared OTLP/HTTP protobuf export layer. Logs and
 metrics shipped in 0.1.0; 0.1.1 widened Finch compatibility. Phases 0–3 are complete.
 [Product decisions](docs/product-decisions.md) and the
-[release record](docs/submission/release-0.1.1.md) describe implemented behavior.
+[release checklist](docs/submission/readiness.md) describe implemented behavior.
 
-The owner has expanded the planned scope to **SDK-compatible trace export**.
-Phases 4–6 have merged. Phase 7 implements replacement proof, migration, and
-preparation of an unpublished 0.2.0 candidate on its phase branch. The public 0.1.1 release still provides logs/metrics
-only. Development does not publish a release or authorize replacing the tracing SDK.
+**SDK-compatible trace export** shipped in 0.2.0 after Phases 4–7. Version 0.2.1,
+published September 30, 2026, corrected log/metric instrumentation scope versions.
+The current release is 0.2.2, with the Mint security floor and refreshed docs.
+The phase designs and gates below retain the
+original implementation sequence; they do not imply tracing remains unreleased.
+Development does not publish a release or authorize replacing the tracing SDK.
 
 Confirmed decisions:
 
 - Keep one package and Finch directly; share transport, protocol generation,
   configuration conventions, and diagnostics across signals.
 - Preserve `OtlpShipper.LogHandler` and `OtlpShipper.MetricsReporter` behavior.
-- Add a proposed `OtlpShipper.TraceExporter` through the existing SDK exporter
+- Provide `OtlpShipper.TraceExporter` through the existing SDK exporter
   interface. Retain `opentelemetry_api`, the tracing SDK, and existing instrumentation.
 - The SDK owns span creation, sampling, context propagation, and trace batching.
   Shipper owns conversion, OTLP/HTTP requests, bounded transport retries, and
@@ -42,7 +44,7 @@ any original two-signal design assumptions.
 
 ## 1. What this is
 
-Three planned entry points send telemetry from an Elixir app to an OTLP/HTTP
+Three implemented entry points send telemetry from an Elixir app to an OTLP/HTTP
 collector. The implemented logs/metrics components do not run the OpenTelemetry
 SDK's logs or metrics machinery:
 
@@ -52,7 +54,7 @@ SDK's logs or metrics machinery:
 - **`OTLPShipper.MetricsReporter`** — a `Telemetry.Metrics` reporter (the same shape as
   `TelemetryMetricsPrometheus` / `TelemetryMetricsStatsd`) that aggregates metric
   definitions over an interval and POSTs them as `ExportMetricsServiceRequest`.
-- **`OtlpShipper.TraceExporter` (planned)** — an SDK exporter adapter that converts
+- **`OtlpShipper.TraceExporter`** — an SDK exporter adapter that converts
   completed spans and sends `ExportTraceServiceRequest` to `/v1/traces`.
 
 The initial replacement target is the canonical exporter's **OTLP/HTTP trace
@@ -114,7 +116,7 @@ supported version matrix.
 
 Do not depend on `opentelemetry_exporter` or reuse its generated message modules.
 Vendor OTLP schemas with provenance/licenses and generate namespaced encoders with
-gpb. This is already implemented for logs and metrics; extend it to traces.
+gpb. This is implemented for logs, metrics, and traces.
 Bounded export-response decoding is required for partial rejection. Production does
 not ingest encoded telemetry. There is no remaining encoder fallback to the
 canonical exporter.
@@ -122,16 +124,17 @@ canonical exporter.
 | Dependency | Role | Contract |
 | --- | --- | --- |
 | Finch | Pooled OTLP/HTTP transport | Required; existing compatible range |
+| Mint | Finch HTTP transport | Required >= 1.10.2 within 1.x for security fixes |
 | telemetry / telemetry_metrics | Diagnostics and metrics definitions | Required; unchanged |
 | gpb | Generated protobuf codecs | Build-time, absent at release runtime |
 | opentelemetry_api | Existing optional log correlation; trace API | Remains optional for non-tracing consumers |
-| opentelemetry | Trace SDK and exporter boundary | Currently test-only; trace consumers supply it; Phase 4 proves optional compilation strategy |
+| opentelemetry | Trace SDK and exporter boundary | Optional with `runtime: false`; trace consumers own startup; Phase 4 proved optional compilation |
 | opentelemetry_exporter | Replacement target | Absent from replacement consumer and dependency tree |
 
 Do not infer dependency savings from historical claims about upstream's mandatory
 or optional gRPC dependencies. Inspect the selected versions and measure the actual
 consumer tree. HTTP/protobuf remains the only transport; gRPC is outside this plan.
-No dependency change is made by this planning update.
+The current dependency declarations are in `mix.exs`.
 
 ---
 
@@ -283,7 +286,7 @@ alternative.
 | 4 | SDK compatibility probe and approved trace contracts | Complete; [decision record](docs/decisions/trace-compatibility.md), PR #16 merged |
 | 5 | Trace schemas, configuration, encoding, and HTTP conformance | Complete; PR #17 merged |
 | 6 | SDK exporter, bounded lifecycle, correlation | Complete; PR #18 merged |
-| 7 | Replacement consumer, real Collector, migration/release preparation | Complete on phase branch; [PR #19](https://github.com/jeffreybaird/otlp_shipper/pull/19) awaiting merge; [work record](docs/workflows/phase-7-trace-release.md) |
+| 7 | Replacement consumer, real Collector, migration/release preparation | Complete; shipped in 0.2.0; [PR #19](https://github.com/jeffreybaird/otlp_shipper/pull/19); [work record](docs/workflows/phase-7-trace-release.md) |
 
 Each phase is a focused branch and PR. Do not start its successor until it merges.
 Use the five-role harness for implementation: Gherkin/failing tests, independent red,
@@ -333,7 +336,7 @@ previous is merged.
 
 ---
 
-## 12. Planned tracing contract
+## 12. Original tracing contract (implemented through Phases 4–7)
 
 ### Boundaries and compatibility
 

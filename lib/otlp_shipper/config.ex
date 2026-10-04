@@ -110,7 +110,8 @@ defmodule OtlpShipper.Config do
   Supports headers, compression, timeout, retries, and request limits with the same
   units and defaults as `new/3`. `:max_batch` is independent of SDK queue size.
   Resource/service identity and SDK queue/flush/shutdown options are rejected.
-  The returned resource is `nil`; the future SDK adapter owns resource selection.
+  The returned resource is `nil`; `OtlpShipper.TraceExporter` preserves the
+  resource provided by the SDK.
 
       iex> {:ok, config} = OtlpShipper.Config.transport(:traces)
       iex> {config.endpoint, config.resource}

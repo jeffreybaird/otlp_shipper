@@ -35,16 +35,15 @@ distinguishes those plans from implemented behavior; examples in these instructi
 
 This is an Elixir library distributed as a Hex package. Use Mix, ExUnit, doctests,
 and the repository's formatter. `mix.exs` declares `:otlp_shipper`, version
-`0.1.1`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
-The planned product ships logs, metrics, and traces over OTLP/HTTP. Logs and metrics
-are implemented; SDK-compatible trace export is planned in PLAN.md Phases 4–7.
-Retain the OTel API, tracing SDK, and existing instrumentation; replacing them is
-outside the tracing expansion. Do not describe planned trace support as shipped.
-The shared core, supervised Logger handling, and metrics reporter are implemented
-through Phase 3, including opt-in real Collector conformance and local release
-preparation. Version 0.1.1 was published to public Hex on September 13, 2026.
-See [release evidence](../docs/submission/release-0.1.1.md). Future publication
-remains separately authorized.
+`0.2.2`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
+Logs, metrics, and SDK-compatible traces are implemented over OTLP/HTTP through
+PLAN.md Phases 0–7, including opt-in real Collector conformance and packaged
+consumer checks. Tracing shipped in 0.2.0; 0.2.1 corrected log/metric instrumentation
+scope versions. Retain the OTel API, tracing SDK, and existing instrumentation;
+replacing them is outside scope. GitHub is public. The current release is 0.2.2,
+which requires Mint >= 1.10.2 within 1.x for security fixes. See
+[release readiness](../docs/submission/readiness.md) for evidence and current gates.
+Publication requires release authorization.
 Development is authorized. Use Finch directly for HTTP and publish atomic commits
 to the phase branch after checks pass. Public Hex publication requires release authorization.
 
@@ -123,7 +122,7 @@ when independent instances are useful. Bound queues, batches, concurrency, retri
 and shutdown waits. Define overflow and loss behavior before implementing a buffer.
 Do not introduce a durable queue without a durability requirement.
 
-Follow [docs/architecture.md](../docs/architecture.md) for the planned shared core and
+Follow [docs/architecture.md](../docs/architecture.md) for the implemented shared core and
 dependency constraints. Generate protobuf encoders; never hand-write wire encoding.
 
 Give external calls timeouts and explicit error mapping. A timeout does not prove
