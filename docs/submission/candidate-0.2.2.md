@@ -86,7 +86,7 @@ rejection of 1.10.1. Existing upstream API 1.3.0 warnings on OTP 29 remain discl
 in the README; no diagnostics were suppressed.
 
 Archive `otlp_shipper-0.2.2.tar` SHA-256:
-`080b211533b59c897b1c7a2c9ae8e2a5f6248993c8648b92726c309641a33460`.
+`0292f843b7297f5518897f141a699e2239b353985988c5d8b3ce9072dded580d`.
 Version, required Mint floor, MIT metadata, source/build inputs, schema licenses,
 migration guide, and conformance assets were inspected. Tests, scripts, agent/Git
 configuration, caches, credentials, and the repository lockfile are excluded.
@@ -99,3 +99,19 @@ and found no evidence of the runner editing tests. No checks were weakened.
 The source base is `8f64716`; the release branch is `codex/release-0.2.2`.
 Remote pinned/minimum CI and final publication status are recorded separately below.
 No package or documentation upload has been performed at this preparation stage.
+
+
+## Final documentation clarification
+
+The complete local matrix initially checked archive
+`080b211533b59c897b1c7a2c9ae8e2a5f6248993c8648b92726c309641a33460`.
+Final review clarified which lower bounds the consumer scripts pin in README.
+Rebuilt ExDoc, Hex archive, and publication dry run passed. Independent archive
+comparison confirmed all packaged files except README are byte-identical, including
+all source, build inputs, dependency metadata, and tests' runtime targets. The final
+checksum is recorded above. Accepted test hashes remain unchanged; independent
+review reports no remaining findings.
+
+[PR #23](https://github.com/jeffreybaird/otlp_shipper/pull/23) carries the exact
+reviewed revisions and pinned/minimum CI results. No merge or publication was
+performed as part of the documentation and version preparation.

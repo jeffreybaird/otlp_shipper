@@ -71,7 +71,9 @@ Version 0.1.1 widens Finch from `~> 0.20.0` to `~> 0.20`, allowing versions
 
 Dependency lower bounds are Finch 0.20.0, Mint 1.10.2, telemetry 1.3.0, telemetry_metrics 1.1.0,
 gpb 4.21.7, and optional opentelemetry_api 1.3.0. Fresh production consumers exercise
-these bounds with and without tracing. gpb 4.21.0 cannot compile on OTP 29 and is
+the pinned Finch, telemetry, telemetry_metrics, gpb, and optional API minimums
+with and without tracing. They resolve Mint independently; the repository test gate
+uses Mint 1.10.2. gpb 4.21.0 cannot compile on OTP 29 and is
 excluded. Optional API 1.3.0 works in the no-active-span smoke but emits an upstream
 `link/2` warning on OTP 29; prefer API 1.5.0 there. SDK span integration is tested
 with API 1.5.0 / SDK 1.7.0. gpb is a build dependency, absent at release runtime.
