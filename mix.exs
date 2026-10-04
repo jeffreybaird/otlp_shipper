@@ -20,10 +20,23 @@ defmodule OtlpShipper.MixProject do
         licenses: ["MIT"],
         links: %{"GitHub" => "https://github.com/jeffreybaird/otlp_shipper"},
         files:
-          ~w(lib mix priv mix.exs .formatter.exs README.md LICENSE CHANGELOG.md docs/migration.md)
+          ~w(lib mix priv mix.exs .formatter.exs README.md LICENSE CHANGELOG.md docs/migration.md docs/logs.md docs/metrics.md docs/configuration.md docs/troubleshooting.md docs/compatibility.md docs/advanced.md)
       ],
       dialyzer: [plt_add_apps: [:mix, :opentelemetry]],
-      docs: [main: "readme", extras: ["README.md", "CHANGELOG.md", "docs/migration.md"]]
+      docs: [
+        main: "readme",
+        extras: [
+          "README.md",
+          "CHANGELOG.md",
+          "docs/migration.md",
+          "docs/logs.md",
+          "docs/metrics.md",
+          "docs/configuration.md",
+          "docs/troubleshooting.md",
+          "docs/compatibility.md",
+          "docs/advanced.md"
+        ]
+      ]
     ]
   end
 

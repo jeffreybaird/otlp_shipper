@@ -1,10 +1,13 @@
-# Migrating trace export to otlp_shipper 0.2.x
+# Set up trace export
 
-SDK-compatible trace export is available since 0.2.0. The examples below target
-0.2.2. Since 0.2.1, log and metric instrumentation scopes report the loaded package
-version; original trace scopes remain unchanged. Upgrading from 0.2.1 to 0.2.2
-requires no trace configuration changes. It adds a Mint 1.10.2 security minimum;
-run `mix deps.update otlp_shipper mint` and review your consumer lockfile.
+Use this guide to replace `opentelemetry_exporter` while keeping your existing
+instrumentation. Follow the steps in order: add dependencies, configure the SDK,
+start its pool first, then verify delivery. For an explicitly named provider,
+see [advanced APIs](advanced.md#named-sdk-trace-provider).
+
+Already using 0.2.1? Version 0.2.2 needs no trace configuration changes. Run
+`mix deps.update otlp_shipper mint` and review your lockfile for the Mint 1.10.2
+security minimum. See [compatibility](compatibility.md) for upgrade details.
 
 ## What changes
 
@@ -20,7 +23,7 @@ work. Initialization rejects unverified versions. Representative instrumentation
 is **opentelemetry_finch 0.2.0**, with Finch 0.20.0 and the current resolved version.
 A fresh release without the optional API/SDK remains supported for logs/metrics.
 
-## Dependencies and startup
+## 1. Add dependencies
 
 The consumer owns the global SDK and its configuration. Make it an included
 application so OTP loads it without starting it before the Finch pool:
@@ -54,6 +57,8 @@ Remove the direct canonical exporter dependency and verify no other dependency
 reintroduces it. Adding SDK/API to an existing consumer requires recompiling
 `otlp_shipper`, because guarded integration modules are selected at compilation.
 
+## 2. Configure the SDK
+
 Configure the SDK in the **consumer's** config/runtime configuration before its
 supervisor starts. Preserve your sampler by wrapping its existing specification:
 
@@ -75,6 +80,8 @@ attribute range. Shipper rejects that invalid resource instead of silently
 stringifying it, so omitting this override can prevent trace export. Use the same
 identity for logs and metrics; shipper does not replace or merge the SDK resource
 inside trace callbacks.
+
+## 3. Start the pool before the SDK
 
 Start the pool before the included SDK under a dedicated `:rest_for_one` supervisor:
 
@@ -110,10 +117,12 @@ dependent SDK, and reverse-order shutdown stops the SDK before Finch. The
 `:infinity` supervisor shutdown follows OTP semantics and is not a bounded
 whole-application shutdown guarantee. Export attempts still have bounded timeouts;
 crashes and restart gaps can lose spans. A named provider is an alternative only
-for instrumentation configured to use it; the README shows that separate setup.
+for instrumentation configured to use it; [advanced APIs](advanced.md#named-sdk-trace-provider) shows that separate setup.
 A named provider alone does not redirect the global tracer.
 
-Configure logs and metrics with matching resource options:
+## 4. Match log and metric identity
+
+If you also export logs and metrics, configure them with matching resource options:
 
 ```elixir
 identity = [
@@ -131,7 +140,7 @@ shipper owns only log/metric buffers. Instrumentation continues using its existi
 API and context. Logs inside an active span inherit its IDs; detached logs do not
 reuse stale inherited IDs.
 
-## Endpoints, limits, and feedback
+## 5. Check endpoints, limits, and feedback
 
 Trace transport precedence is explicit exporter options, trace-specific
 `OTEL_EXPORTER_OTLP_TRACES_*` variables, then generic `OTEL_EXPORTER_OTLP_*`
@@ -186,7 +195,17 @@ The verified SDK exposes no scope attributes/dropped count or link flags/remote
 context state. The adapter preserves available fields and does not invent missing
 ones. Sampling, context propagation, and instrumentation semantics remain SDK-owned.
 
-## Verification and rollback
+## 6. Verify delivery
+
+Emit an ordinary instrumented request in your application. Confirm that your
+collector receives its span with the expected service name and parentage. If you
+also send logs inside that span, confirm that their trace and span IDs match.
+Check that exporter HTTP requests do not generate an ongoing stream of new spans
+and that only one exporter sends each signal. See [troubleshooting](troubleshooting.md).
+
+### Run the repository verification tools
+
+The following commands run from an `otlp_shipper` source checkout:
 
 Run the package's strict test/analysis gate, SDK-absent/present release smoke, and
 `sh scripts/replacement_consumer_smoke.sh`. Repeat the latter with
@@ -194,13 +213,15 @@ Run the package's strict test/analysis gate, SDK-absent/present release smoke, a
 consumer, performs an ordinary instrumented Finch request, and checks decoded logs,
 metrics, traces, IDs, resource identity, feedback suppression, and dependency absence.
 It uses a local collector fixture; `mix otlp_shipper.conformance` separately checks
-all three signals against pinned real Collector 0.160.0. See the README for Docker
-setup. No production endpoint or credential is needed.
+all three signals against pinned real Collector 0.160.0. See the [contributor guide](https://github.com/jeffreybaird/otlp_shipper/blob/main/docs/README.md#develop-the-package)
+for Docker setup. No production endpoint or credential is needed.
 
 The proof emits elapsed time, VM memory snapshots, and a runtime application
 inventory. These are descriptive smoke-run measurements, not throughput,
 allocation, retained-heap, or comparative size benchmarks. No performance or
 footprint advantage over the canonical exporter is claimed.
+
+## Roll back
 
 To roll back, stop producers and drain as above, restore the previously verified
 canonical exporter dependency and configuration from your lockfile/release, remove
