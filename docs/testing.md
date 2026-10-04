@@ -105,11 +105,12 @@ Follow [submission/build.md](submission/build.md) for the package consumer check
 A source checkout passing tests does not prove an archive contains everything a
 consumer needs. Report checks as passed, failed, blocked, skipped, or unrun accurately.
 
-## Planned OTLP acceptance suite
+## OTLP acceptance suite
 
-Build the local Bandit/Plug fake collector in Phase 0. Accept `/v1/logs` and
-`/v1/metrics`, decode generated protobuf in test support, and assert full payload
-contracts. Runtime encoding-only scope does not prohibit a test decoder.
+The local Bandit/Plug fake collector accepts `/v1/logs`, `/v1/metrics`, and
+`/v1/traces`. Test support decodes generated protobuf and asserts full payload
+contracts. Production response decoding remains separate from test-only payload
+decoding.
 
 For logs, cover severity, structured bodies, metadata filtering, truncation counts,
 16-byte trace and 8-byte span IDs inside a span, and empty IDs without tracing.
@@ -127,9 +128,12 @@ Keep configuration/endpoint precedence, resource validation, value conversion,
 severity mapping, and histogram layout pure and doctested. Cover `Retry-After`,
 retry exhaustion, drop telemetry, and bounded shutdown in transport/process tests.
 
-Phase 3 adds the planned opt-in real OTel Collector check using Docker, excluded
-from default CI. Record it separately from fake-collector success. Recheck the
-upstream logs replacement before Phase 1 as required by PLAN.md.
+The opt-in real OTel Collector check uses Docker and is excluded from default CI.
+It verifies all three signals and correlation. Record it separately from
+fake-collector success. Recheck upstream logs support before release claims.
+
+The phase verification sections below are historical run records. Current release
+checks and toolchain results are in [release readiness](submission/readiness.md).
 
 ## Phase 0 verification — September 12, 2026
 

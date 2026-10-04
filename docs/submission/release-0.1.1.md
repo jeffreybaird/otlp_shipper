@@ -1,5 +1,9 @@
 # 0.1.1 publication verification
 
+Historical record: versions, visibility, and publication status below describe that
+release check. See [current release readiness](readiness.md) for present status.
+
+
 Verified September 15, 2026 against the public release and merged repository.
 
 | Item | Verified result |

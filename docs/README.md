@@ -2,22 +2,23 @@
 
 These documents adapt Page Monitor's repository workflow for an Elixir Hex library
 and carry over the applicable style from Marquee's `CLAUDE.md` and `.claude/` files.
-The source repositories remain unchanged. [../PLAN.md](../PLAN.md) supplies the package design. Implementation through Phase 3 is recorded in product decisions;
-publication still requires separate authorization.
-
-version 0.1.1 was published to public Hex on September 13, 2026.
+[../PLAN.md](../PLAN.md) supplies the original package design. Phases 0–7 are
+implemented; logs, metrics, and SDK-compatible trace export are available on Hex.
+The source repository is public. The latest verified public release is 0.2.1
+(September 30, 2026); this tree prepares 0.2.2. See the release checklist for status.
+Dated phase and candidate records preserve evidence from their original runs.
 
 | Document | Use |
 | --- | --- |
-| [Product decisions](product-decisions.md) | Known scope, scaffold facts, unresolved contracts |
-| [Architecture](architecture.md) | Implemented core, logs, metrics, and dependency boundaries |
+| [Product decisions](product-decisions.md) | Current scope and historical implementation decisions |
+| [Architecture](architecture.md) | Implemented core, logs, metrics, traces, and dependency boundaries |
 | [Elixir style](elixir-style.md) | Functions, errors, documentation, side effects |
 | [Interface design](interface-design.md) | Consumer API and compatibility |
 | [Testing](testing.md) | ExUnit, adapters, processes, consumer checks |
 | [Agent coordination](codex-agents.md) | Five-role specification, red/green, and review loop |
 | [Agent guardrails](agent-guardrails.md) | Hook activation, human approval, and enforcement limits |
 | [Data handling](data-handling.md) | Configuration, credentials, diagnostics |
-| [0.1.1 release](submission/release-0.1.1.md) | Published artifact and consumer verification |
+| [0.2.2 candidate](submission/candidate-0.2.2.md) | Current preparation and verification |
 | [Release readiness](submission/readiness.md) | Prerequisites and evidence |
 | [Build](submission/build.md) | Local Hex package inspection and publication |
 | [Package listing](submission/package-listing.md) | Metadata and README requirements |

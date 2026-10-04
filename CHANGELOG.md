@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.2 — 2026-10-04
+
+- Refresh installation and migration examples for 0.2.2 and link the public source
+  repository. Remove stale unpublished-release claims from consumer documentation.
+- Align API and development documentation with shipped trace support and the
+  0.2.1 instrumentation scope version fix. Runtime APIs are unchanged.
+- Require Mint 1.10.2 or newer within 1.x in published dependency metadata, excluding
+  versions affected by CVE-2026-94194, CVE-2026-91043, and CVE-2026-92103. Existing
+  consumers should update both `otlp_shipper` and `mint` in their lockfiles.
+
 ## 0.2.1 — 2026-09-30
 
 - Derive the logs and metrics instrumentation scope version from the installed
@@ -62,8 +72,9 @@ Initial public Hex release.
   or newer within 4.x because 4.21.0 fails to compile on OTP 29.
 
 Delivery is best effort and in memory. Crashes, overload, and exhausted retries
-lose data; retries can duplicate accepted data. Traces, durable queues, cumulative
-metrics, gRPC, and custom certificate/mTLS environment settings are out of scope.
+lose data; retries can duplicate accepted data. Traces were outside the 0.1.0 scope
+and were added in 0.2.0. Durable queues, cumulative metrics, gRPC, and custom
+certificate/mTLS environment settings remain out of scope.
 
 Elixir 1.19+ and OTP 28+ are the baseline. Breaking changes in the initial 0.x
 series will increment the minor version and include migration notes.

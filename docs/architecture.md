@@ -1,22 +1,23 @@
 # OTLP architecture
 
-This guide summarizes [../PLAN.md](../PLAN.md). The shared core, Logger adapter,
-and metrics reporter are implemented, including Phase 3 conformance/release work.
-The unreleased trace protocol core and Phase 6 SDK integration are implemented. Tracing is not part of the current 0.1.1 release.
+This guide describes the implemented shared core, Logger adapter, metrics reporter,
+and SDK-compatible trace exporter. Logs and metrics shipped in 0.1.0; trace export
+shipped in 0.2.0. See [../PLAN.md](../PLAN.md) for the original phase contracts and
+[release readiness](submission/readiness.md) for current publication status.
 Confirmed: `otlp_shipper`, module root `OtlpShipper`, public Hex, Finch directly.
 
 ## One package, independent signals
 
 The log handler and metrics reporter share the core and never depend on each other.
 Keep the log handler replaceable if upstream SDK support makes it unnecessary.
-The consumer chooses which components to start. Unreleased trace export integrates
+The consumer chooses which components to start. Trace export integrates
 with the existing OTel SDK batch processor; it does not replace that SDK or add
 another shipper queue for spans.
 
 | Component | Responsibility |
 | --- | --- |
 | Config | Explicit options over OTEL environment configuration; per-signal settings and endpoint rules |
-| Resource | Logs/metrics service identity and attributes; require `service.name` at startup; planned traces preserve the SDK resource |
+| Resource | Logs/metrics service identity and attributes; require `service.name` at startup; traces preserve the SDK resource |
 | Value | Shared generated-message inputs for AnyValue, KeyValue, and Resource |
 | Transport | OTLP/HTTP POST, headers, gzip, timeouts, bounded retry and failure reporting |
 | Buffer | Logs/metrics batching, periodic/size flush, bounded retention, shutdown flush |
@@ -51,12 +52,12 @@ not bound pending casts. Logs drop oldest on overflow and count losses. Cap log
 bodies and attributes and report dropped attributes accurately. Define the metrics
 series limit decision explicitly; tag cardinality can otherwise exhaust memory.
 
-The plan calls for retries on 429/503 and transport errors, exponential backoff with
-jitter, `Retry-After`, and dropping after bounded attempts. Keep work off the caller's
+Transport retries 429/502/503/504 and transport errors using exponential backoff
+with jitter and `Retry-After`, then drops after bounded attempts. Keep work off the caller's
 logging/event path. A lost response can cause duplicate delivery; document that
 boundary. Shutdown flush is bounded best effort, not durable delivery after a crash.
 
-Emit the planned export stop/exception and dropped telemetry events. Document
+Emit export stop/exception and dropped telemetry events. Document
 measurement units, status values, reasons, and what the counts mean. Diagnostics
 use a filtered domain and rate limiting so an export failure cannot feed itself.
 Exclude the reporter's own diagnostics from configurations that would recurse.
@@ -111,7 +112,7 @@ rejecting excessive data instead of truncating; copied binary slices bound retai
 memory. Histogram bounds are validated after double conversion as well as before
 export. Numeric overflow is an observed drop, never wrapped arithmetic.
 
-## Unreleased trace boundary
+## Trace boundary
 
 The guarded `OtlpShipper.TraceExporter` implements the SDK's exporter callbacks.
 The SDK owns span lifecycle, sampling, propagation, and batching. Export runs in

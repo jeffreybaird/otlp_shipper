@@ -4,14 +4,13 @@ An Elixir package for bounded OTLP/HTTP logs, `Telemetry.Metrics`, and SDK-compa
 trace export. Finch provides HTTP connection pooling. Logs and metrics work without
 the OpenTelemetry SDK; tracing retains the canonical API, SDK, and instrumentation.
 
-**[0.2.0 is available on Hex](https://hex.pm/packages/otlp_shipper/0.2.0).**
-[API documentation](https://hexdocs.pm/otlp_shipper/0.2.0/) is public. The GitHub
-source repository is currently private. See the
-[migration guide](docs/migration.md) for trace exporter replacement and rollback.
+[Hex package](https://hex.pm/packages/otlp_shipper) ·
+[API documentation](https://hexdocs.pm/otlp_shipper/) ·
+[Public source repository](https://github.com/jeffreybaird/otlp_shipper)
 
-**This source tree prepares 0.2.1; it has not been published.** The patch makes
-log and metric instrumentation scopes report the loaded `otlp_shipper` application
-version instead of `0.1.0`. Original trace scopes remain unchanged.
+See the [migration guide](docs/migration.md) for trace exporter replacement and
+rollback. Since 0.2.1, log and metric instrumentation scopes report the loaded
+`otlp_shipper` application version. Trace scopes retain their original identity.
 
 ## Metrics setup
 
@@ -53,13 +52,13 @@ Logger.info("checkout complete", order_id: "example-42")
 
 ## Installation and compatibility
 
-For the 0.2.1 release, add the package to your `mix.exs` dependencies:
+Add the package to your `mix.exs` dependencies:
 
 ```elixir
-{:otlp_shipper, "~> 0.2.1"}
+{:otlp_shipper, "~> 0.2.2"}
 ```
 
-The dependency becomes available when 0.2.1 is published. Then run `mix deps.get`. The snippets above show standalone trees; in an application,
+Run `mix deps.get`. The snippets above show standalone trees; in an application,
 add each child to your existing supervisor instead of starting an extra root.
 
 Elixir 1.19+ and OTP 28+ are the supported baseline. CI checks Elixir 1.19.0 / OTP
@@ -70,12 +69,17 @@ versions, but those are not pre-certified.
 Version 0.1.1 widens Finch from `~> 0.20.0` to `~> 0.20`, allowing versions
 `>= 0.20.0` and `< 1.0.0`, including 0.21.x. No runtime behavior changed.
 
-Dependency lower bounds are Finch 0.20.0, telemetry 1.3.0, telemetry_metrics 1.1.0,
+Dependency lower bounds are Finch 0.20.0, Mint 1.10.2, telemetry 1.3.0, telemetry_metrics 1.1.0,
 gpb 4.21.7, and optional opentelemetry_api 1.3.0. Fresh production consumers exercise
 these bounds with and without tracing. gpb 4.21.0 cannot compile on OTP 29 and is
 excluded. Optional API 1.3.0 works in the no-active-span smoke but emits an upstream
 `link/2` warning on OTP 29; prefer API 1.5.0 there. SDK span integration is tested
 with API 1.5.0 / SDK 1.7.0. gpb is a build dependency, absent at release runtime.
+
+Version 0.2.2 requires Mint 1.10.2 or newer within 1.x to exclude versions affected
+by CVE-2026-94194, CVE-2026-91043, and CVE-2026-92103. When upgrading an existing
+consumer, run `mix deps.update otlp_shipper mint` and review the resulting lockfile.
+The package's repository lockfile does not control consumer resolution.
 
 ## Metric behavior
 
@@ -217,9 +221,9 @@ Use another exporter when you need trace protocols or SDK versions outside the
 compatibility described below. Unsupported metric types and units are rejected at startup. Before adopting the logs handler, compare
 [`opentelemetry_experimental`](https://hex.pm/packages/opentelemetry_experimental)
 with this package's Logger integration and delivery contracts; avoid exporting each
-event through both. The September 12, 2026 release-preparation recheck still found 0.5.1, the
-release assessed during Phase 1. Recheck before adopting or publishing; this
-package does not claim that every newer upstream development snapshot is broken.
+event through both. The October 4, 2026 registry check found experimental 0.6.0.
+Its runtime replacement compatibility has not been reevaluated here; the historical
+0.5.1 investigation is not evidence that current upstream logs support is broken.
 Do not use this package when durable or exactly-once log delivery is required.
 
 ## Shared core
@@ -384,10 +388,10 @@ Apache-2.0 license and provenance in `priv/proto/`. gpb generates namespaced mod
 at build time and is not a runtime application. Collector response decoding is
 included to detect partial rejection; production does not ingest encoded telemetry.
 
-Repository development and release guidance lives under `docs/`.
-Version 0.2.0 was published on September 21, 2026. Version 0.2.1 is an unpublished
-patch candidate. See `docs/submission/readiness.md` for release guidance. Building
-a package does not publish it; further uploads require release authorization.
+Repository development and release guidance lives in the public source repository's
+[development guide](https://github.com/jeffreybaird/otlp_shipper/blob/main/docs/README.md)
+and [release checklist](https://github.com/jeffreybaird/otlp_shipper/blob/main/docs/submission/readiness.md).
+Building a package does not publish it.
 
 
 ## Trace protocol core
