@@ -8,7 +8,7 @@ Keep `mix.exs`, README, public module docs, and release notes consistent:
 | Field | Current state / required work |
 | --- | --- |
 | Application / intended package | `:otlp_shipper` / `otlp_shipper` on public Hex; publisher/owner `jeffreybaird` |
-| Version | `0.2.2` candidate; public `0.2.1` published September 30, 2026 |
+| Version | `0.2.2` current release |
 | Description | Metadata describes logs, metrics, and SDK-compatible trace export; release status is tracked in the readiness checklist |
 | License | MIT text and matching metadata added |
 | Links | Public Hex and versioned HexDocs available; GitHub source/support links are public |

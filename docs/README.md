@@ -4,8 +4,9 @@ These documents adapt Page Monitor's repository workflow for an Elixir Hex libra
 and carry over the applicable style from Marquee's `CLAUDE.md` and `.claude/` files.
 [../PLAN.md](../PLAN.md) supplies the original package design. Phases 0–7 are
 implemented; logs, metrics, and SDK-compatible trace export are available on Hex.
-The source repository is public. The latest verified public release is 0.2.1
-(September 30, 2026); this tree prepares 0.2.2. See the release checklist for status.
+The source repository is public. The current release is
+[0.2.2](https://hex.pm/packages/otlp_shipper/0.2.2), with
+[versioned API documentation](https://hexdocs.pm/otlp_shipper/0.2.2/).
 Dated phase and candidate records preserve evidence from their original runs.
 
 | Document | Use |
@@ -18,7 +19,7 @@ Dated phase and candidate records preserve evidence from their original runs.
 | [Agent coordination](codex-agents.md) | Five-role specification, red/green, and review loop |
 | [Agent guardrails](agent-guardrails.md) | Hook activation, human approval, and enforcement limits |
 | [Data handling](data-handling.md) | Configuration, credentials, diagnostics |
-| [0.2.2 candidate](submission/candidate-0.2.2.md) | Current preparation and verification |
+| [0.2.2 release evidence](submission/candidate-0.2.2.md) | Release scope and verification |
 | [Release readiness](submission/readiness.md) | Prerequisites and evidence |
 | [Build](submission/build.md) | Local Hex package inspection and publication |
 | [Package listing](submission/package-listing.md) | Metadata and README requirements |

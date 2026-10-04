@@ -1,8 +1,11 @@
-# 0.2.2 release candidate
+# 0.2.2 release evidence
 
-## Scope and public status
+The current release is 0.2.2. This record preserves the checks performed before
+publication; registry observations below are dated evidence, not release status.
 
-Prepared October 4, 2026. Refresh consumer/API/development documentation, remove
+## Scope and pre-publication observations
+
+Release date: October 4, 2026. Refresh consumer/API/development documentation, remove
 stale private-source and unpublished-0.2.1 claims, and require Mint >= 1.10.2 within
 1.x. The owner approved the dependency security floor during this release review.
 Runtime APIs and trace configuration remain unchanged.
@@ -86,7 +89,7 @@ rejection of 1.10.1. Existing upstream API 1.3.0 warnings on OTP 29 remain discl
 in the README; no diagnostics were suppressed.
 
 Archive `otlp_shipper-0.2.2.tar` SHA-256:
-`0292f843b7297f5518897f141a699e2239b353985988c5d8b3ce9072dded580d`.
+`de0b1197ff8f1710b4ec23f387ad1a6a6842fdb70bb0b493e9bbd9a76bc95311`.
 Version, required Mint floor, MIT metadata, source/build inputs, schema licenses,
 migration guide, and conformance assets were inspected. Tests, scripts, agent/Git
 configuration, caches, credentials, and the repository lockfile are excluded.
@@ -97,8 +100,8 @@ and test-writer formatting activity; the reviewer inspected the commands and has
 and found no evidence of the runner editing tests. No checks were weakened.
 
 The source base is `8f64716`; the release branch is `codex/release-0.2.2`.
-Remote pinned/minimum CI and final publication status are recorded separately below.
-No package or documentation upload has been performed at this preparation stage.
+Remote pinned/minimum CI results are attached to PR #23 below.
+These local checks and dry runs did not upload a package or documentation.
 
 
 ## Final documentation clarification
@@ -113,5 +116,15 @@ checksum is recorded above. Accepted test hashes remain unchanged; independent
 review reports no remaining findings.
 
 [PR #23](https://github.com/jeffreybaird/otlp_shipper/pull/23) carries the exact
-reviewed revisions and pinned/minimum CI results. No merge or publication was
-performed as part of the documentation and version preparation.
+reviewed revisions and pinned/minimum CI results. The owner publishes 0.2.2 upon
+merge; consumer documentation describes the resulting release state.
+
+
+## Release-state documentation
+
+At the owner's request, current guides describe 0.2.2 as the current release for
+publication upon merge. Earlier registry checks above remain historical evidence.
+ExDoc with warnings as errors, Hex build, and the publication dry run passed after
+this wording update. Comparing the rebuilt archive with the preceding archive
+confirmed only README changed; dependency metadata and runtime/build files remain
+byte-identical. The final archive checksum above reflects this update.

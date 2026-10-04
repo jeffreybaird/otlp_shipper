@@ -4,8 +4,8 @@ An Elixir package for bounded OTLP/HTTP logs, `Telemetry.Metrics`, and SDK-compa
 trace export. Finch provides HTTP connection pooling. Logs and metrics work without
 the OpenTelemetry SDK; tracing retains the canonical API, SDK, and instrumentation.
 
-[Hex package](https://hex.pm/packages/otlp_shipper) ·
-[API documentation](https://hexdocs.pm/otlp_shipper/) ·
+**Current release: [0.2.2](https://hex.pm/packages/otlp_shipper/0.2.2).**
+[API documentation](https://hexdocs.pm/otlp_shipper/0.2.2/) ·
 [Public source repository](https://github.com/jeffreybaird/otlp_shipper)
 
 See the [migration guide](docs/migration.md) for trace exporter replacement and

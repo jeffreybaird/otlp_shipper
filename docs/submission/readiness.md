@@ -1,17 +1,14 @@
 # Hex release readiness
 
-As checked on October 4, 2026, **0.2.1 is published** with documentation. The
-[public Hex API](https://hex.pm/api/packages/otlp_shipper/releases/0.2.1) records
-publication on September 30, 2026 at 11:05:10 UTC. The
-[GitHub repository](https://github.com/jeffreybaird/otlp_shipper) is public, confirmed
-through its unauthenticated API. Tracing shipped in 0.2.0; 0.2.1 corrected log and
-metric instrumentation scope versions.
+The current release is **[0.2.2](https://hex.pm/packages/otlp_shipper/0.2.2)**, with
+[versioned API documentation](https://hexdocs.pm/otlp_shipper/0.2.2/).
+The [GitHub repository](https://github.com/jeffreybaird/otlp_shipper) is public.
 
-This tree prepares **0.2.2**, refreshing documentation and requiring Mint >= 1.10.2
-within 1.x for the published security floor.
-See [candidate evidence](candidate-0.2.2.md) for checks and remaining release gates.
-Preparation does not upload a package or documentation. Earlier candidate and
-release records are historical evidence, not statements of current registry status.
+Version 0.2.2 refreshes documentation and requires Mint >= 1.10.2 within 1.x for
+security fixes. Tracing shipped in 0.2.0; 0.2.1 corrected log and metric
+instrumentation scope versions. See [0.2.2 release evidence](candidate-0.2.2.md)
+for scope, security review, and verification. Earlier candidate and release records
+preserve their original check results and are not current-version announcements.
 
 ## Subsequent releases
 

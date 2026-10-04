@@ -2,9 +2,9 @@
 
 [../PLAN.md](../PLAN.md) is the intended design, not evidence of implemented features.
 The user has authorized development, atomic commits, and a push after each commit.
-Version 0.2.1 is the latest public release verified on October 4, 2026. This tree
-prepares 0.2.2. Tracing shipped in 0.2.0; 0.2.1 corrected log/metric instrumentation
-scope versions. The GitHub repository is public. See
+The current release is 0.2.2, which requires Mint >= 1.10.2 within 1.x and refreshes
+consumer and development documentation. Tracing shipped in 0.2.0; 0.2.1 corrected
+log/metric instrumentation scope versions. The GitHub repository is public. See
 [release readiness](submission/readiness.md) for current status.
 Dated scaffold and phase sections below preserve observations at that time,
 including superseded dependency, visibility, and publication statements.
@@ -213,8 +213,8 @@ Phases 4–7 cover compatibility/contracts, protocol/core, SDK integration, and
 replacement-consumer/Collector proof with migration and release preparation.
 Each phase waits for its predecessor's merge. A full tracing SDK replacement,
 gRPC, durable queues, metric exemplars, and global auto-configuration are deferred.
-The current release remains 0.1.1 with logs/metrics only; a candidate tracing release
-is a future readiness decision, not publication authorization.
+At this planning stage, the release was 0.1.1 with logs/metrics only; a candidate
+tracing release was a future readiness decision, not publication authorization.
 
 
 ## Phase 4 compatibility investigation — September 17, 2026
@@ -310,8 +310,8 @@ application arrangement. The SDK creates global application tracers normally.
 The library never installs sampling or configuration globally. See the migration
 guide for startup, resource consistency, and the verified SDK-specific boundary.
 
-The candidate version is 0.2.0. It is not a public release; 0.1.1 remains the
-published logs/metrics package. Release authorization, final merged revision,
+The Phase 7 candidate version was 0.2.0. At that preparation stage, 0.1.1 was
+the published logs/metrics package. Release authorization, final merged revision,
 publication and public-install verification are separate from development.
 See the [Phase 7 work record](workflows/phase-7-trace-release.md) for current evidence.
 Elapsed time, VM snapshots and dependency inventory are descriptive observations;

@@ -40,8 +40,8 @@ Logs, metrics, and SDK-compatible traces are implemented over OTLP/HTTP through
 PLAN.md Phases 0–7, including opt-in real Collector conformance and packaged
 consumer checks. Tracing shipped in 0.2.0; 0.2.1 corrected log/metric instrumentation
 scope versions. Retain the OTel API, tracing SDK, and existing instrumentation;
-replacing them is outside scope. GitHub is public. Version 0.2.1 was published to
-public Hex on September 30, 2026; this tree prepares 0.2.2. See
+replacing them is outside scope. GitHub is public. The current release is 0.2.2,
+which requires Mint >= 1.10.2 within 1.x for security fixes. See
 [release readiness](../docs/submission/readiness.md) for evidence and current gates.
 Publication requires release authorization.
 Development is authorized. Use Finch directly for HTTP and publish atomic commits
