@@ -2,7 +2,7 @@
 
 The package exports logs, metrics, and traces to consumer-configured OTLP/HTTP
 endpoints. Telemetry can include log bodies, metric tags, span attributes/events,
-resource identity, and trace/span IDs. The [README](../README.md) documents endpoint
+resource identity, and trace/span IDs. The [configuration guide](configuration.md) documents endpoint
 and header precedence, limits, and failure behavior; the [migration guide](migration.md)
 describes SDK resource and startup ownership.
 
