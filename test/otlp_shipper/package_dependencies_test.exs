@@ -21,15 +21,40 @@ defmodule OtlpShipper.PackageDependenciesTest do
     refute Version.match?("2.0.0", requirement)
   end
 
-  defp mint_dependency do
-    dependency = List.keyfind(OtlpShipper.MixProject.project()[:deps], :mint, 0)
+  test "DEP-03 HPAX is a required production Hex dependency" do
+    {_requirement, options} = hpax_dependency()
+
+    refute Keyword.get(options, :optional, false)
+    assert :prod in List.wrap(Keyword.get(options, :only, :prod))
+    refute Keyword.has_key?(options, :path)
+    refute Keyword.has_key?(options, :git)
+    refute Keyword.has_key?(options, :github)
+    assert Keyword.get(options, :hex, :hpax) == :hpax
+  end
+
+  test "DEP-04 HPAX requirement excludes vulnerable releases and allows compatible updates" do
+    {requirement, _options} = hpax_dependency()
+
+    refute Version.match?("0.2.0", requirement)
+    refute Version.match?("1.0.3", requirement)
+    assert Version.match?("1.0.4", requirement)
+    assert Version.match?("1.1.0", requirement)
+    refute Version.match?("2.0.0", requirement)
+  end
+
+  defp mint_dependency, do: direct_dependency(:mint, "Mint")
+
+  defp hpax_dependency, do: direct_dependency(:hpax, "HPAX")
+
+  defp direct_dependency(app, label) do
+    dependency = List.keyfind(OtlpShipper.MixProject.project()[:deps], app, 0)
 
     assert dependency,
-           "Mint must be declared directly so Hex consumers inherit its security floor"
+           "#{label} must be declared directly so Hex consumers inherit its security floor"
 
     case dependency do
-      {:mint, requirement} -> {requirement, []}
-      {:mint, requirement, options} -> {requirement, options}
+      {^app, requirement} -> {requirement, []}
+      {^app, requirement, options} -> {requirement, options}
     end
   end
 end
