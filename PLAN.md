@@ -14,7 +14,8 @@ metrics shipped in 0.1.0; 0.1.1 widened Finch compatibility. Phases 0–3 are co
 
 **SDK-compatible trace export** shipped in 0.2.0 after Phases 4–7. Version 0.2.1,
 published September 30, 2026, corrected log/metric instrumentation scope versions.
-The current release is 0.2.2, with the Mint security floor and refreshed docs.
+The current release is 0.2.2, with the Mint security floor and refreshed docs; the
+source prepares 0.2.3 with an HPAX security floor.
 The phase designs and gates below retain the
 original implementation sequence; they do not imply tracing remains unreleased.
 Development does not publish a release or authorize replacing the tracing SDK.

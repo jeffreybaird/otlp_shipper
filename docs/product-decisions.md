@@ -5,7 +5,8 @@ The user has authorized development, atomic commits, and a push after each commi
 The current release is 0.2.2, which requires Mint >= 1.10.2 within 1.x and refreshes
 consumer and development documentation. Tracing shipped in 0.2.0; 0.2.1 corrected
 log/metric instrumentation scope versions. The GitHub repository is public. See
-[release readiness](submission/readiness.md) for current status.
+[release readiness](submission/readiness.md) for current status. The source
+prepares 0.2.3, which adds an HPAX >= 1.0.4 security floor.
 Dated scaffold and phase sections below preserve observations at that time,
 including superseded dependency, visibility, and publication statements.
 

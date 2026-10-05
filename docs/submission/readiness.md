@@ -7,7 +7,11 @@ The [GitHub repository](https://github.com/jeffreybaird/otlp_shipper) is public.
 Version 0.2.2 refreshes documentation and requires Mint >= 1.10.2 within 1.x for
 security fixes. Tracing shipped in 0.2.0; 0.2.1 corrected log and metric
 instrumentation scope versions. See [0.2.2 release evidence](candidate-0.2.2.md)
-for scope, security review, and verification. Earlier candidate and release records
+for scope, security review, and verification.
+
+The source prepares **0.2.3**, a security patch that also requires HPAX >= 1.0.4
+within 1.x. See [0.2.3 candidate evidence](candidate-0.2.3.md). Preparation does
+not upload a package or documentation. Earlier candidate and release records
 preserve their original check results and are not current-version announcements.
 
 ## Subsequent releases

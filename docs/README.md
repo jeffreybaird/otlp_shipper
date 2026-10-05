@@ -76,6 +76,7 @@ Building a package does not publish it.
 | [Build](submission/build.md) | Package inspection and publication |
 | [Package listing](submission/package-listing.md) | Metadata checklist |
 | [Reviewer notes](submission/reviewer-notes.md) | Release review |
+| [0.2.3 candidate](submission/candidate-0.2.3.md) | Security patch verification |
 | [0.2.2 evidence](submission/candidate-0.2.2.md) | Release verification |
 | [Documentation approach](documentation-approach.md) | Research and writing choices |
 
