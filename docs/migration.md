@@ -5,9 +5,10 @@ instrumentation. Follow the steps in order: add dependencies, configure the SDK,
 start its pool first, then verify delivery. For an explicitly named provider,
 see [advanced APIs](advanced.md#named-sdk-trace-provider).
 
-Already using 0.2.1? Version 0.2.2 needs no trace configuration changes. Run
-`mix deps.update otlp_shipper mint` and review your lockfile for the Mint 1.10.2
-security minimum. See [compatibility](compatibility.md) for upgrade details.
+Already using 0.2.1 or 0.2.2? Version 0.2.3 needs no trace configuration changes.
+Run `mix deps.update otlp_shipper mint hpax` and review your lockfile for the Mint
+1.10.2 and HPAX 1.0.4 security minimums. See [compatibility](compatibility.md) for
+upgrade details.
 
 ## What changes
 
@@ -32,7 +33,7 @@ application so OTP loads it without starting it before the Finch pool:
 # Consumer mix.exs
 defp deps do
   [
-    {:otlp_shipper, "~> 0.2.2"},
+    {:otlp_shipper, "~> 0.2.3"},
     {:opentelemetry, "== 1.7.0", runtime: false},
     {:opentelemetry_api, "== 1.5.0"},
     {:opentelemetry_finch, "== 0.2.0"}

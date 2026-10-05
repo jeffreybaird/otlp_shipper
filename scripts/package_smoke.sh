@@ -19,7 +19,7 @@ defmodule Consumer.MixProject do
      deps: [{:otlp_shipper, path: System.fetch_env!("OTLP_SMOKE_PACKAGE")}] ++ compatibility_deps()]
   end
   defp compatibility_deps do
-    minimum = [{:finch, "== 0.20.0"}, {:telemetry, "== 1.3.0"},
+    minimum = [{:finch, "== 0.20.0"}, {:mint, "== 1.10.2"}, {:hpax, "== 1.0.4"}, {:telemetry, "== 1.3.0"},
       {:telemetry_metrics, "== 1.1.0"}, {:gpb, "== 4.21.7", runtime: false}]
     case System.get_env("OTLP_SMOKE_DEPENDENCY_SET") do
       nil -> []

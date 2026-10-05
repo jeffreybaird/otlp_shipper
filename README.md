@@ -9,8 +9,8 @@ Use the components you need:
 | Metrics | `Telemetry.Metrics` definitions | No |
 | Traces | Your existing OpenTelemetry SDK and instrumentation | Yes |
 
-[Hex package](https://hex.pm/packages/otlp_shipper/0.2.2) ·
-[API documentation](https://hexdocs.pm/otlp_shipper/0.2.2/) ·
+[Hex package](https://hex.pm/packages/otlp_shipper/0.2.3) ·
+[API documentation](https://hexdocs.pm/otlp_shipper/0.2.3/) ·
 [Source](https://github.com/jeffreybaird/otlp_shipper)
 
 ## Install
@@ -18,7 +18,7 @@ Use the components you need:
 Requires Elixir 1.19+ and OTP 28+. Add to your `mix.exs` dependencies:
 
 ```elixir
-{:otlp_shipper, "~> 0.2.2"}
+{:otlp_shipper, "~> 0.2.3"}
 ```
 
 Then run `mix deps.get`.

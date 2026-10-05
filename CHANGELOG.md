@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3 — Unreleased
+
+- Require HPAX 1.0.4 or newer within 1.x in published dependency metadata. Mint
+  1.10.2 still accepts HPAX versions affected by CVE-2026-58226 (unbounded HPACK
+  integer decoding denial of service). Runtime APIs are unchanged. Existing
+  consumers should run `mix deps.update otlp_shipper mint hpax`.
+
 ## 0.2.2 — 2026-10-04
 
 - Refresh installation and migration examples for 0.2.2 and link the public source

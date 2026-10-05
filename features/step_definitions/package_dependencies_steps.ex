@@ -5,18 +5,14 @@ defmodule OtlpShipper.Acceptance.PackageDependenciesSteps do
   import ExUnit.Assertions
 
   given_("the shipper package dependency declarations", fn world ->
-    dependency = List.keyfind(OtlpShipper.MixProject.project()[:deps], :mint, 0)
+    dependencies = OtlpShipper.MixProject.project()[:deps]
+    {requirement, options} = direct_dependency(dependencies, :mint, "Mint")
 
-    assert dependency,
-           "Mint must be declared directly so Hex consumers inherit its security floor"
-
-    {requirement, options} =
-      case dependency do
-        {:mint, requirement} -> {requirement, []}
-        {:mint, requirement, options} -> {requirement, options}
-      end
-
-    Map.merge(world, %{mint_requirement: requirement, mint_options: options})
+    Map.merge(world, %{
+      dependencies: dependencies,
+      mint_requirement: requirement,
+      mint_options: options
+    })
   end)
 
   then_("Mint is a required production Hex dependency", fn world ->
@@ -35,4 +31,37 @@ defmodule OtlpShipper.Acceptance.PackageDependenciesSteps do
     assert Version.match?(version, world.mint_requirement) == (result == "accepted")
     world
   end)
+
+  then_("HPAX is a required production Hex dependency", fn world ->
+    {_requirement, options} = direct_dependency(world.dependencies, :hpax, "HPAX")
+
+    refute Keyword.get(options, :optional, false)
+    assert :prod in List.wrap(Keyword.get(options, :only, :prod))
+    refute Keyword.has_key?(options, :path)
+    refute Keyword.has_key?(options, :git)
+    refute Keyword.has_key?(options, :github)
+    assert Keyword.get(options, :hex, :hpax) == :hpax
+    world
+  end)
+
+  then_("HPAX version {string} is {string} by the package requirement", fn world,
+                                                                           version,
+                                                                           result ->
+    {requirement, _options} = direct_dependency(world.dependencies, :hpax, "HPAX")
+
+    assert Version.match?(version, requirement) == (result == "accepted")
+    world
+  end)
+
+  defp direct_dependency(dependencies, app, label) do
+    dependency = List.keyfind(dependencies, app, 0)
+
+    assert dependency,
+           "#{label} must be declared directly so Hex consumers inherit its security floor"
+
+    case dependency do
+      {^app, requirement} -> {requirement, []}
+      {^app, requirement, options} -> {requirement, options}
+    end
+  end
 end

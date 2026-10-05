@@ -35,13 +35,14 @@ distinguishes those plans from implemented behavior; examples in these instructi
 
 This is an Elixir library distributed as a Hex package. Use Mix, ExUnit, doctests,
 and the repository's formatter. `mix.exs` declares `:otlp_shipper`, version
-`0.2.2`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
+`0.2.3`, and Elixir `~> 1.19`; `.tool-versions` pins the development toolchain.
 Logs, metrics, and SDK-compatible traces are implemented over OTLP/HTTP through
 PLAN.md Phases 0–7, including opt-in real Collector conformance and packaged
 consumer checks. Tracing shipped in 0.2.0; 0.2.1 corrected log/metric instrumentation
 scope versions. Retain the OTel API, tracing SDK, and existing instrumentation;
 replacing them is outside scope. GitHub is public. The current release is 0.2.2,
-which requires Mint >= 1.10.2 within 1.x for security fixes. See
+which requires Mint >= 1.10.2 within 1.x for security fixes. The source prepares
+0.2.3, which also requires HPAX >= 1.0.4 within 1.x. See
 [release readiness](../docs/submission/readiness.md) for evidence and current gates.
 Publication requires release authorization.
 Development is authorized. Use Finch directly for HTTP and publish atomic commits
